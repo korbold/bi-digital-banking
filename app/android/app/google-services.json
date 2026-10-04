@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "224647001108",
+    "project_id": "bi-digital-banking-d0081",
+    "storage_bucket": "bi-digital-banking-d0081.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:224647001108:android:3a9e4f01e1a96c0eece301",
+        "android_client_info": {
+          "package_name": "ec.korbold.bidigital"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiQBjsEOCKctNVRKJEfW0XTC57kwKkK8Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
