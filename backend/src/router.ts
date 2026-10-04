@@ -1,5 +1,6 @@
 import { errorBody, HttpError } from './http.js';
 import * as accounts from './handlers/accounts.js';
+import * as beneficiaries from './handlers/beneficiaries.js';
 import * as devices from './handlers/devices.js';
 import * as events from './handlers/events.js';
 import * as fx from './handlers/fx.js';
@@ -32,6 +33,7 @@ const table: Array<[RegExp, Module]> = [
   [/^\/api\/accounts$/, accounts],
   [/^\/api\/accounts\/[^/]+\/movements$/, movements],
   [/^\/api\/transfers$/, transfers],
+  [/^\/api\/beneficiaries\/lookup$/, beneficiaries],
   [/^\/api\/home$/, home],
   [/^\/api\/events$/, events],
   [/^\/api\/devices$/, devices],

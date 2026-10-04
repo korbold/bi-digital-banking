@@ -1,5 +1,6 @@
 import type {
   Account,
+  AccountRef,
   BehaviorEvent,
   Customer,
   Device,
@@ -54,17 +55,21 @@ export interface BankRepository {
   /** All accounts, movements with date >= sinceIso. */
   listMovementsSince(uid: string, sinceIso: string): Promise<Movement[]>;
 
+  /** O(1) lookup through accountIndex/{accountNumber}. */
+  findAccountByNumber(accountNumber: string): Promise<AccountRef | null>;
+
   /**
-   * Atomically: check idempotency key, read both accounts, run `plan`, write
-   * new balances + movements + idempotency record. A replay with the same key
-   * and same request hash returns the stored result without re-executing.
+   * Atomically: check idempotency key (scoped to the initiating customer),
+   * read both accounts — which may belong to different customers — run
+   * `plan`, write new balances + movements + idempotency record. A replay
+   * with the same key and request hash returns the stored result.
    */
   executeTransfer(
-    uid: string,
+    initiatorUid: string,
     idempotencyKey: string,
     requestHash: string,
-    fromId: string,
-    toId: string,
+    from: AccountRef,
+    to: AccountRef,
     plan: TransferPlanner,
   ): Promise<TransferOutcome>;
 

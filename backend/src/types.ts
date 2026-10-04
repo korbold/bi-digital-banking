@@ -33,6 +33,9 @@ export interface Account {
   id: string;
   type: AccountType;
   alias: string;
+  /** Full 10-digit number, shown only to its owner so they can share it. */
+  accountNumber: string;
+  /** Masked form (****1234) used in lists and third-party views. */
   number: string;
   currency: 'USD';
   balance: number;
@@ -99,16 +102,42 @@ export interface Experience {
 
 // ---- Transfers ----
 
+/** Exactly one of toAccountId (own account) or toAccountNumber (any account). */
 export interface TransferInput {
   fromAccountId: string;
-  toAccountId: string;
+  toAccountId?: string;
+  toAccountNumber?: string;
   amount: number;
   description: string;
 }
 
-export interface TransferResult {
-  transferId: string;
-  from: { id: string; balance: number };
-  to: { id: string; balance: number };
-  createdAt: string;
+export type TransferResult =
+  | {
+      transferId: string;
+      kind: 'own';
+      from: { id: string; balance: number };
+      to: { id: string; balance: number };
+      createdAt: string;
+    }
+  | {
+      transferId: string;
+      kind: 'third_party';
+      from: { id: string; balance: number };
+      /** The recipient's balance is never disclosed to the sender. */
+      to: { accountNumber: string; holderName: string };
+      createdAt: string;
+    };
+
+export interface AccountRef {
+  uid: string;
+  accountId: string;
+}
+
+export interface BeneficiaryPreview {
+  accountNumber: string;
+  maskedNumber: string;
+  holderName: string;
+  type: AccountType;
+  isOwn: boolean;
+  accountId: string | null;
 }

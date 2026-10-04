@@ -1,6 +1,6 @@
 import type { DocumentData, Firestore } from 'firebase-admin/firestore';
 import { HttpError } from '../http.js';
-import type { Account, BehaviorEvent, Customer, Device, Experience, Movement, Platform } from '../types.js';
+import type { Account, AccountRef, BehaviorEvent, Customer, Device, Experience, Movement, Platform } from '../types.js';
 import type { BankRepository, IdempotencyRecord, MovementPage, TransferOutcome, TransferPlanner } from './types.js';
 
 /**
@@ -12,6 +12,7 @@ import type { BankRepository, IdempotencyRecord, MovementPage, TransferOutcome, 
  *   customers/{uid}/events/{eventId}
  *   experiences/{experienceId}
  *   idempotency/{uid}_{key}
+ *   accountIndex/{accountNumber}       -> { uid, accountId }
  *
  * Dates are stored as ISO-8601 strings: they sort lexicographically, so
  * range queries and ordering work without Timestamp conversions.
@@ -40,7 +41,11 @@ export class FirestoreBankRepository implements BankRepository {
     const batch = this.db.batch();
     const { uid, ...data } = customer;
     batch.set(this.customer(uid), data);
-    for (const { id, ...a } of accounts) batch.set(this.accountsCol(uid).doc(id), a);
+    for (const { id, ...a } of accounts) {
+      batch.set(this.accountsCol(uid).doc(id), a);
+      // create() fails the whole batch if the number is already taken.
+      batch.create(this.db.collection('accountIndex').doc(a.accountNumber), { uid, accountId: id });
+    }
     for (const { id, ...m } of movements) batch.set(this.movementsCol(uid, m.accountId).doc(id), m);
     await batch.commit();
   }
@@ -81,17 +86,22 @@ export class FirestoreBankRepository implements BankRepository {
     return pages.flatMap((p) => p.docs.map((d) => ({ id: d.id, ...d.data() }) as Movement));
   }
 
+  async findAccountByNumber(accountNumber: string): Promise<AccountRef | null> {
+    const snap = await this.db.collection('accountIndex').doc(accountNumber).get();
+    return snap.exists ? (snap.data() as AccountRef) : null;
+  }
+
   async executeTransfer(
-    uid: string,
+    initiatorUid: string,
     idempotencyKey: string,
     requestHash: string,
-    fromId: string,
-    toId: string,
+    from: AccountRef,
+    to: AccountRef,
     plan: TransferPlanner,
   ): Promise<TransferOutcome> {
-    const idemRef = this.db.collection('idempotency').doc(`${uid}_${idempotencyKey}`);
-    const fromRef = this.accountsCol(uid).doc(fromId);
-    const toRef = this.accountsCol(uid).doc(toId);
+    const idemRef = this.db.collection('idempotency').doc(`${initiatorUid}_${idempotencyKey}`);
+    const fromRef = this.accountsCol(from.uid).doc(from.accountId);
+    const toRef = this.accountsCol(to.uid).doc(to.accountId);
 
     return this.db.runTransaction(async (tx) => {
       // All reads first (Firestore transaction rule), then all writes.
@@ -113,7 +123,10 @@ export class FirestoreBankRepository implements BankRepository {
 
       tx.update(fromRef, { balance: planned.from.balance, available: planned.from.available });
       tx.update(toRef, { balance: planned.to.balance, available: planned.to.available });
-      for (const { id, ...m } of planned.movements) tx.set(this.movementsCol(uid, m.accountId).doc(id), m);
+      for (const { id, ...m } of planned.movements) {
+        const owner = m.accountId === from.accountId ? from.uid : to.uid;
+        tx.set(this.movementsCol(owner, m.accountId).doc(id), m);
+      }
       const record: IdempotencyRecord = { requestHash, body: planned.result, createdAt: planned.result.createdAt };
       tx.set(idemRef, record as unknown as DocumentData);
       return { result: planned.result, replayed: false };

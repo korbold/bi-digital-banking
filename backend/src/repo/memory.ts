@@ -1,5 +1,5 @@
 import { HttpError } from '../http.js';
-import type { Account, BehaviorEvent, Customer, Device, Experience, Movement, Platform } from '../types.js';
+import type { Account, AccountRef, BehaviorEvent, Customer, Device, Experience, Movement, Platform } from '../types.js';
 import type { BankRepository, IdempotencyRecord, MovementPage, TransferOutcome, TransferPlanner } from './types.js';
 
 const clone = <T>(v: T): T => structuredClone(v);
@@ -17,12 +17,18 @@ export class MemoryBankRepository implements BankRepository {
   readonly devices = new Map<string, Map<string, Device>>();
   readonly experiences = new Map<string, Experience>();
   readonly idempotency = new Map<string, IdempotencyRecord>();
+  readonly accountIndex = new Map<string, AccountRef>();
 
   async getCustomer(uid: string) {
     return clone(this.customers.get(uid) ?? null);
   }
 
   async createCustomer(customer: Customer, accounts: Account[], movements: Movement[]) {
+    for (const a of accounts) {
+      const taken = this.accountIndex.get(a.accountNumber);
+      if (taken && taken.uid !== customer.uid) throw new Error(`account number taken: ${a.accountNumber}`);
+    }
+    for (const a of accounts) this.accountIndex.set(a.accountNumber, { uid: customer.uid, accountId: a.id });
     this.customers.set(customer.uid, clone(customer));
     this.accounts.set(customer.uid, new Map(accounts.map((a) => [a.id, clone(a)])));
     this.movements.set(customer.uid, clone(movements));
@@ -60,15 +66,19 @@ export class MemoryBankRepository implements BankRepository {
     return clone((this.movements.get(uid) ?? []).filter((m) => m.date >= sinceIso));
   }
 
+  async findAccountByNumber(accountNumber: string) {
+    return clone(this.accountIndex.get(accountNumber) ?? null);
+  }
+
   async executeTransfer(
-    uid: string,
+    initiatorUid: string,
     idempotencyKey: string,
     requestHash: string,
-    fromId: string,
-    toId: string,
+    fromRef: AccountRef,
+    toRef: AccountRef,
     plan: TransferPlanner,
   ): Promise<TransferOutcome> {
-    const idemKey = `${uid}_${idempotencyKey}`;
+    const idemKey = `${initiatorUid}_${idempotencyKey}`;
     const existing = this.idempotency.get(idemKey);
     if (existing) {
       if (existing.requestHash !== requestHash) {
@@ -76,16 +86,18 @@ export class MemoryBankRepository implements BankRepository {
       }
       return { result: clone(existing.body), replayed: true };
     }
-    const accounts = this.accounts.get(uid);
-    const from = accounts?.get(fromId);
-    const to = accounts?.get(toId);
-    if (!accounts || !from || !to) throw new HttpError(404, 'not_found', 'Cuenta no encontrada');
+    const from = this.accounts.get(fromRef.uid)?.get(fromRef.accountId);
+    const to = this.accounts.get(toRef.uid)?.get(toRef.accountId);
+    if (!from || !to) throw new HttpError(404, 'not_found', 'Cuenta no encontrada');
 
     const planned = plan(clone(from), clone(to)); // may throw -> nothing written
 
-    accounts.set(planned.from.id, planned.from);
-    accounts.set(planned.to.id, planned.to);
-    this.movements.set(uid, [...(this.movements.get(uid) ?? []), ...planned.movements]);
+    this.accounts.get(fromRef.uid)!.set(planned.from.id, planned.from);
+    this.accounts.get(toRef.uid)!.set(planned.to.id, planned.to);
+    for (const m of planned.movements) {
+      const owner = m.accountId === fromRef.accountId ? fromRef.uid : toRef.uid;
+      this.movements.set(owner, [...(this.movements.get(owner) ?? []), clone(m)]);
+    }
     this.idempotency.set(idemKey, { requestHash, body: clone(planned.result), createdAt: planned.result.createdAt });
     return { result: clone(planned.result), replayed: false };
   }

@@ -64,8 +64,14 @@ export interface SeedResult {
   movements: Movement[];
 }
 
-function accountNumber(rng: Rng): string {
-  return `****${randomInt(rng, 1000, 9999)}`;
+/** 10 digits: type prefix (22 ahorros, 10 corriente) + 8 random digits. */
+function accountNumber(rng: Rng, type: 'savings' | 'checking'): { accountNumber: string; number: string } {
+  const full = `${type === 'savings' ? '22' : '10'}${randomInt(rng, 10_000_000, 99_999_999)}`;
+  return { accountNumber: full, number: maskAccountNumber(full) };
+}
+
+export function maskAccountNumber(full: string): string {
+  return `****${full.slice(-4)}`;
 }
 
 function atLocalTime(base: Date, daysAgo: number, rng: Rng): Date {
@@ -175,7 +181,7 @@ export function generateSeed(uid: string, now: Date = new Date()): SeedResult {
       id: ids.savings,
       type: 'savings',
       alias: 'Cuenta de Ahorros',
-      number: accountNumber(rng),
+      ...accountNumber(rng, 'savings'),
       currency: 'USD',
       balance: balances.savings,
       available: balances.savings,
@@ -185,7 +191,7 @@ export function generateSeed(uid: string, now: Date = new Date()): SeedResult {
       id: ids.checking,
       type: 'checking',
       alias: 'Cuenta Corriente',
-      number: accountNumber(rng),
+      ...accountNumber(rng, 'checking'),
       currency: 'USD',
       balance: balances.checking,
       available: balances.checking,
