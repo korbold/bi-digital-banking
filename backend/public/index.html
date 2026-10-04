@@ -1,8 +1,226 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>BFF banca digital</title></head>
-<body style="font-family: system-ui, sans-serif; padding: 24px">
-  <h1>BFF banca digital</h1>
-  <p>API en <code>/api/*</code> (ver <code>docs/api-contract.md</code>). Micro-app de ejemplo: <a href="/miniapps/insurance/">/miniapps/insurance/</a>.</p>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Banca Digital · Estado del BFF</title>
+  <meta name="description" content="Estado en vivo del Backend for Frontend de la plataforma de banca digital: dependencias, endpoints y documentación.">
+  <style>
+    :root {
+      --bg: #f6f7f9; --surface: #ffffff; --ink: #1b1f27; --muted: #5d6675; --line: #e3e6eb;
+      --accent: #c2410c; --up: #15803d; --up-bg: #e8f5ec; --warn: #a16207; --warn-bg: #fdf4dc;
+      --down: #b91c1c; --down-bg: #fdeaea; --code-bg: #f0f2f5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f1216; --surface: #171b21; --ink: #e8eaee; --muted: #9aa3b1; --line: #262c35;
+        --accent: #fb923c; --up: #4ade80; --up-bg: #12291b; --warn: #facc15; --warn-bg: #2b2510;
+        --down: #f87171; --down-bg: #2e1515; --code-bg: #1f242c;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+      font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+    header { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 28px; }
+    .eyebrow { color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; margin: 0 0 6px; }
+    h1 { font-size: 28px; line-height: 1.2; margin: 0; }
+    h2 { font-size: 17px; margin: 0 0 12px; }
+    .sub { color: var(--muted); margin: 6px 0 0; max-width: 560px; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+      font-weight: 600; font-size: 14px; background: var(--code-bg); color: var(--muted); white-space: nowrap; }
+    .pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+    .pill.up { background: var(--up-bg); color: var(--up); }
+    .pill.degraded { background: var(--warn-bg); color: var(--warn); }
+    .pill.down { background: var(--down-bg); color: var(--down); }
+    section { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .check { border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+    .check-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .check-name { font-weight: 600; }
+    .check-desc { color: var(--muted); font-size: 13px; margin: 4px 0 10px; }
+    .metric { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 600; }
+    .metric small { font-size: 13px; color: var(--muted); font-weight: 400; }
+    .bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; margin-top: 10px; }
+    .bars span { flex: 1; background: var(--up); opacity: .75; border-radius: 2px 2px 0 0; min-height: 3px; }
+    .bars span.bad { background: var(--down); }
+    .meta { color: var(--muted); font-size: 13px; margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+    button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+      border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+    button:hover { border-color: var(--muted); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 520px; }
+    th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 500; font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); padding: 2px 6px; border-radius: 5px; }
+    .method { font: 600 12px ui-monospace, Menlo, monospace; color: var(--accent); }
+    .lock { color: var(--muted); font-size: 13px; }
+    .links { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .links a { display: block; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; color: var(--ink); text-decoration: none; }
+    .links a:hover { border-color: var(--accent); }
+    .links a span { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .flow { font: 13px/1.6 ui-monospace, Menlo, monospace; background: var(--code-bg); border-radius: 10px; padding: 14px; overflow-x: auto; white-space: pre; margin: 0; }
+    footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 24px; }
+    a { color: var(--accent); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <p class="eyebrow">Prueba técnica · Flutter Senior</p>
+      <h1>Banca Digital — BFF</h1>
+      <p class="sub">Backend for Frontend de la app Flutter: identidad con Firebase Auth, datos en Firestore, personalización server-driven, transferencias idempotentes y push.</p>
+    </div>
+    <span id="overall" class="pill" role="status" aria-live="polite">Comprobando…</span>
+  </header>
+
+  <section aria-labelledby="deps-title">
+    <div class="check-top" style="margin-bottom:12px">
+      <h2 id="deps-title" style="margin:0">Dependencias en vivo</h2>
+      <button id="refresh" type="button">Actualizar</button>
+    </div>
+    <div class="grid" id="checks">
+      <div class="check" id="check-api">
+        <div class="check-top"><span class="check-name">API (BFF)</span><span class="pill" data-pill>—</span></div>
+        <p class="check-desc">Latencia medida desde tu navegador a <code>/api/health</code></p>
+        <div class="metric" data-metric>— <small>ms</small></div>
+        <div class="bars" data-bars aria-hidden="true"></div>
+      </div>
+      <div class="check" id="check-firestore">
+        <div class="check-top"><span class="check-name">Cloud Firestore</span><span class="pill" data-pill>—</span></div>
+        <p class="check-desc">Lectura de sonda desde el BFF (Admin SDK)</p>
+        <div class="metric" data-metric>— <small>ms</small></div>
+      </div>
+      <div class="check" id="check-fx_provider">
+        <div class="check-top"><span class="check-name">Tipos de cambio</span><span class="pill" data-pill>—</span></div>
+        <p class="check-desc">Proveedor externo open.er-api.com, con caché de 10 min</p>
+        <div class="metric" data-metric>— <small>ms</small></div>
+      </div>
+    </div>
+    <div class="meta">
+      <span id="checked-at">Sin datos aún</span>
+      <span id="version"></span>
+      <span>Se actualiza cada 30 s · JSON: <a href="/api/status">/api/status</a></span>
+    </div>
+  </section>
+
+  <section aria-labelledby="arch-title">
+    <h2 id="arch-title">Cómo encaja</h2>
+<pre class="flow">App Flutter ──HTTPS + ID token──▶ BFF (Vercel Function, TypeScript)
+   │  reintentos · circuit breaker · caché     ├─▶ Cloud Firestore   (clientes, cuentas, movimientos, experiencias)
+   │                                             ├─▶ Firebase Cloud Messaging  (push tras cada transferencia)
+   ├─▶ Firebase Auth / Remote Config             └─▶ open.er-api.com   (tipos de cambio)
+   └─▶ WebView ──puente JS──▶ micro-app de seguros (/miniapps/insurance/)</pre>
+  </section>
+
+  <section aria-labelledby="api-title">
+    <h2 id="api-title">Endpoints</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Método</th><th scope="col">Ruta</th><th scope="col">Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td class="method">GET</td><td><code>/api/health</code> <span class="lock">público</span></td><td>Liveness</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/status</code> <span class="lock">público</span></td><td>Estado de dependencias</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/me</code></td><td>Perfil del cliente; 404 <code>onboarding_required</code> si no existe</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/onboarding</code></td><td>Alta idempotente: segmentación y cuentas con movimientos iniciales</td></tr>
+          <tr><td class="method">PATCH</td><td><code>/api/me/preferences</code></td><td>Intereses del cliente</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/accounts</code></td><td>Cuentas y saldos</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/accounts/{id}/movements</code></td><td>Movimientos paginados por cursor</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/transfers</code></td><td>Transferencia atómica; exige <code>Idempotency-Key</code></td></tr>
+          <tr><td class="method">GET</td><td><code>/api/home</code></td><td>Pantalla server-driven personalizada por segmento, uso y gasto</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/events</code></td><td>Señales de comportamiento para personalizar</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/devices</code></td><td>Registro de token FCM</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/notifications/test</code></td><td>Push de prueba al usuario</td></tr>
+          <tr><td class="method">GET</td><td><code>/api/fx</code></td><td>Tipos de cambio (servicio externo)</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/insurance/quote</code></td><td>Cotización usada por la micro-app de seguros</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="meta" style="margin-bottom:0">Salvo los públicos, todos exigen <code>Authorization: Bearer &lt;Firebase ID token&gt;</code>. Errores: <code>{"error":{"code","message"}}</code>.</p>
+  </section>
+
+  <section aria-labelledby="links-title">
+    <h2 id="links-title">Recursos</h2>
+    <div class="links">
+      <a href="https://github.com/korbold/bi-digital-banking">Repositorio<span>Código, historial trunk-based y CI</span></a>
+      <a href="https://github.com/korbold/bi-digital-banking/blob/main/docs/architecture.md">Arquitectura<span>Diagramas, riesgos y escalamiento</span></a>
+      <a href="https://github.com/korbold/bi-digital-banking/tree/main/docs/adr">Decisiones (ADR)<span>Alternativas y trade-offs</span></a>
+      <a href="https://github.com/korbold/bi-digital-banking/blob/main/docs/api-contract.md">Contrato de API<span>Esquemas, SDUI y puente</span></a>
+      <a href="https://github.com/korbold/bi-digital-banking/blob/main/docs/resilience.md">Resiliencia<span>Escenarios degradados y guion de demo</span></a>
+      <a href="/miniapps/insurance/">Micro-app de seguros<span>Fuera de la app abre en modo demo</span></a>
+    </div>
+  </section>
+
+  <footer>Proyecto de evaluación técnica. Datos de clientes ficticios generados en el onboarding.</footer>
+</main>
+
+<script>
+  const history = [];
+  const LABELS = { up: 'Operativo', degraded: 'Degradado', down: 'Caído' };
+  const OVERALL = {
+    operational: ['up', 'Todos los sistemas operativos'],
+    degraded: ['degraded', 'Rendimiento degradado'],
+    partial_outage: ['down', 'Interrupción parcial'],
+  };
+
+  function setCheck(id, status, latencyMs, detail) {
+    const card = document.getElementById('check-' + id);
+    if (!card) return;
+    const pill = card.querySelector('[data-pill]');
+    pill.className = 'pill ' + status;
+    pill.textContent = LABELS[status] || status;
+    card.querySelector('[data-metric]').innerHTML =
+      (latencyMs ?? '—') + ' <small>ms' + (detail ? ' · ' + detail : '') + '</small>';
+  }
+
+  function drawBars() {
+    const bars = document.querySelector('#check-api [data-bars]');
+    const max = Math.max(300, ...history.map((h) => h.ms));
+    bars.innerHTML = history
+      .map((h) => `<span class="${h.ok ? '' : 'bad'}" style="height:${Math.max(8, (h.ms / max) * 100)}%" title="${h.ms} ms"></span>`)
+      .join('');
+  }
+
+  async function check() {
+    const overall = document.getElementById('overall');
+    let apiOk = false;
+    const started = performance.now();
+    try {
+      const res = await fetch('/api/health', { cache: 'no-store' });
+      const ms = Math.round(performance.now() - started);
+      const body = await res.json();
+      apiOk = res.ok;
+      history.push({ ms, ok: apiOk });
+      setCheck('api', apiOk ? 'up' : 'down', ms);
+      if (body.version) document.getElementById('version').textContent = 'Versión ' + body.version;
+    } catch {
+      history.push({ ms: Math.round(performance.now() - started), ok: false });
+      setCheck('api', 'down', null, 'sin respuesta');
+    }
+    if (history.length > 24) history.shift();
+    drawBars();
+
+    try {
+      const res = await fetch('/api/status', { cache: 'no-store' });
+      const body = await res.json();
+      for (const c of body.checks) setCheck(c.name, c.status, c.latencyMs, c.detail);
+      const [cls, text] = OVERALL[body.status] || ['degraded', body.status];
+      overall.className = 'pill ' + (apiOk ? cls : 'down');
+      overall.textContent = apiOk ? text : 'API no disponible';
+    } catch {
+      overall.className = 'pill down';
+      overall.textContent = 'API no disponible';
+    }
+    document.getElementById('checked-at').textContent =
+      'Última comprobación: ' + new Date().toLocaleTimeString('es-EC');
+  }
+
+  document.getElementById('refresh').addEventListener('click', check);
+  check();
+  setInterval(check, 30000);
+</script>
 </body>
 </html>

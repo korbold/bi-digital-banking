@@ -11,6 +11,7 @@ import * as movements from './handlers/movements.js';
 import * as notificationsTest from './handlers/notifications-test.js';
 import * as onboarding from './handlers/onboarding.js';
 import * as preferences from './handlers/preferences.js';
+import * as status from './handlers/status.js';
 import * as transfers from './handlers/transfers.js';
 
 type Handler = (req: Request) => Promise<Response>;
@@ -24,6 +25,7 @@ type Module = Partial<Record<'GET' | 'POST' | 'PATCH', Handler>>;
  */
 const table: Array<[RegExp, Module]> = [
   [/^\/api\/health$/, health],
+  [/^\/api\/status$/, status],
   [/^\/api\/me$/, me],
   [/^\/api\/me\/preferences$/, preferences],
   [/^\/api\/onboarding$/, onboarding],
