@@ -7,6 +7,7 @@ import 'package:feature_accounts/src/domain/accounts_repository.dart';
 import 'package:feature_accounts/src/domain/models.dart';
 import 'package:feature_accounts/src/presentation/formatting.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Balance header + movements grouped by day with infinite scroll.
@@ -189,9 +190,36 @@ class _BalanceHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${account.type.label} ${account.number}',
-              style: theme.textTheme.bodyMedium,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    // The full number is shareable but follows the privacy
+                    // toggle together with the balance.
+                    '${account.type.label} '
+                    '${hidden || account.accountNumber.isEmpty ? account.number : account.accountNumber}',
+                    key: const Key('account_number'),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+                if (account.accountNumber.isNotEmpty)
+                  IconButton(
+                    key: const Key('copy_account_number'),
+                    tooltip: 'Copiar número de cuenta',
+                    icon: const Icon(Icons.copy_rounded, size: 20),
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: account.accountNumber),
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context)
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(
+                          const SnackBar(content: Text('Número copiado')),
+                        );
+                    },
+                  ),
+              ],
             ),
             const SizedBox(height: BiSpacing.sm),
             Text('Saldo disponible', style: theme.textTheme.labelMedium),

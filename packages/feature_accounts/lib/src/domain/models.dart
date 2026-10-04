@@ -26,6 +26,7 @@ class Account extends Equatable {
     required this.balance,
     required this.available,
     this.currency = 'USD',
+    this.accountNumber = '',
   });
 
   factory Account.fromJson(Map<String, dynamic> json) => Account(
@@ -33,6 +34,7 @@ class Account extends Equatable {
     type: AccountType.parse(json['type'] as String?),
     alias: json['alias'] as String? ?? '',
     number: json['number'] as String? ?? '',
+    accountNumber: json['accountNumber'] as String? ?? '',
     currency: json['currency'] as String? ?? 'USD',
     balance: _toDouble(json['balance']),
     available: _toDouble(json['available'] ?? json['balance']),
@@ -42,11 +44,26 @@ class Account extends Equatable {
   final AccountType type;
   final String alias;
 
-  /// Already masked by the BFF (****1234): the full number never reaches the device.
+  /// Masked number (****1234) for lists and receipts.
   final String number;
+
+  /// Full 10-digit number, visible only to its owner so they can share it to
+  /// receive transfers. Empty for payloads cached before v1.1.
+  final String accountNumber;
   final String currency;
   final double balance;
   final double available;
+
+  Account withBalance(double value) => Account(
+    id: id,
+    type: type,
+    alias: alias,
+    number: number,
+    accountNumber: accountNumber,
+    currency: currency,
+    balance: value,
+    available: value,
+  );
 
   @override
   List<Object?> get props => [
@@ -54,6 +71,7 @@ class Account extends Equatable {
     type,
     alias,
     number,
+    accountNumber,
     currency,
     balance,
     available,
@@ -127,16 +145,23 @@ class MovementsPage extends Equatable {
 }
 
 class TransferRequest extends Equatable {
+  /// Exactly one of [toAccountId] (own account) or [toAccountNumber]
+  /// (any account, including third parties) must be provided.
   const TransferRequest({
     required this.fromAccountId,
-    required this.toAccountId,
     required this.amount,
     required this.idempotencyKey,
+    this.toAccountId,
+    this.toAccountNumber,
     this.description = '',
-  });
+  }) : assert(
+         (toAccountId == null) != (toAccountNumber == null),
+         'Provide exactly one destination',
+       );
 
   final String fromAccountId;
-  final String toAccountId;
+  final String? toAccountId;
+  final String? toAccountNumber;
   final double amount;
   final String description;
 
@@ -146,7 +171,8 @@ class TransferRequest extends Equatable {
 
   Map<String, dynamic> toJson() => {
     'fromAccountId': fromAccountId,
-    'toAccountId': toAccountId,
+    'toAccountId': ?toAccountId,
+    'toAccountNumber': ?toAccountNumber,
     'amount': amount,
     'description': description,
   };
@@ -155,6 +181,7 @@ class TransferRequest extends Equatable {
   List<Object?> get props => [
     fromAccountId,
     toAccountId,
+    toAccountNumber,
     amount,
     description,
     idempotencyKey,
@@ -166,20 +193,30 @@ class TransferReceipt extends Equatable {
     required this.transferId,
     required this.fromAccountId,
     required this.fromBalance,
-    required this.toAccountId,
-    required this.toBalance,
     required this.createdAt,
+    this.toAccountId,
+    this.toBalance,
+    this.toHolderName,
+    this.toMaskedNumber,
+    this.isThirdParty = false,
   });
 
   factory TransferReceipt.fromJson(Map<String, dynamic> json) {
     final from = json['from'] as Map<String, dynamic>;
     final to = json['to'] as Map<String, dynamic>;
+    final thirdParty = json['kind'] == 'third_party';
     return TransferReceipt(
       transferId: json['transferId'] as String,
       fromAccountId: from['id'] as String,
       fromBalance: _toDouble(from['balance']),
-      toAccountId: to['id'] as String,
-      toBalance: _toDouble(to['balance']),
+      // Third-party receipts never expose the recipient's balance.
+      toAccountId: thirdParty ? null : to['id'] as String?,
+      toBalance: thirdParty || to['balance'] == null
+          ? null
+          : _toDouble(to['balance']),
+      toHolderName: to['holderName'] as String?,
+      toMaskedNumber: to['accountNumber'] as String?,
+      isThirdParty: thirdParty,
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '')?.toLocal() ??
           DateTime.now(),
@@ -189,8 +226,11 @@ class TransferReceipt extends Equatable {
   final String transferId;
   final String fromAccountId;
   final double fromBalance;
-  final String toAccountId;
-  final double toBalance;
+  final String? toAccountId;
+  final double? toBalance;
+  final String? toHolderName;
+  final String? toMaskedNumber;
+  final bool isThirdParty;
   final DateTime createdAt;
 
   @override
@@ -200,6 +240,49 @@ class TransferReceipt extends Equatable {
     fromBalance,
     toAccountId,
     toBalance,
+    toHolderName,
+    toMaskedNumber,
+    isThirdParty,
     createdAt,
+  ];
+}
+
+/// Result of GET /api/beneficiaries/lookup: who will receive the money,
+/// shown before confirming. Never includes balances or full names.
+class BeneficiaryPreview extends Equatable {
+  const BeneficiaryPreview({
+    required this.accountNumber,
+    required this.maskedNumber,
+    required this.holderName,
+    required this.type,
+    this.isOwn = false,
+    this.accountId,
+  });
+
+  factory BeneficiaryPreview.fromJson(Map<String, dynamic> json) =>
+      BeneficiaryPreview(
+        accountNumber: json['accountNumber'] as String? ?? '',
+        maskedNumber: json['maskedNumber'] as String? ?? '',
+        holderName: json['holderName'] as String? ?? '',
+        type: AccountType.parse(json['type'] as String?),
+        isOwn: json['isOwn'] as bool? ?? false,
+        accountId: json['accountId'] as String?,
+      );
+
+  final String accountNumber;
+  final String maskedNumber;
+  final String holderName;
+  final AccountType type;
+  final bool isOwn;
+  final String? accountId;
+
+  @override
+  List<Object?> get props => [
+    accountNumber,
+    maskedNumber,
+    holderName,
+    type,
+    isOwn,
+    accountId,
   ];
 }

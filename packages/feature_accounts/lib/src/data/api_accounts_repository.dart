@@ -37,4 +37,19 @@ class ApiAccountsRepository implements AccountsRepository {
         decode: (json) =>
             TransferReceipt.fromJson(json! as Map<String, dynamic>),
       );
+
+  @override
+  Future<Result<BeneficiaryPreview>> lookupBeneficiary(
+    String accountNumber,
+  ) async {
+    final result = await _api.get(
+      '/api/beneficiaries/lookup',
+      query: {'accountNumber': accountNumber},
+      // Ownership must always be checked live: never answer from cache.
+      useCache: false,
+      decode: (json) =>
+          BeneficiaryPreview.fromJson(json! as Map<String, dynamic>),
+    );
+    return result.map((fetched) => fetched.data);
+  }
 }

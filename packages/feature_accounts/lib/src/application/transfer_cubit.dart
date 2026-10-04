@@ -8,6 +8,11 @@ import 'package:uuid/uuid.dart';
 
 enum TransferStatus { editing, reviewing, submitting, success, failure }
 
+/// Own accounts (pick from a list) or any account by its 10-digit number.
+enum DestinationMode { own, thirdParty }
+
+enum LookupStatus { idle, loading, found, failed }
+
 class TransferState extends Equatable {
   const TransferState({
     this.fromAccountId,
@@ -18,8 +23,18 @@ class TransferState extends Equatable {
     this.status = TransferStatus.editing,
     this.failure,
     this.receipt,
+    this.mode = DestinationMode.own,
+    this.accountNumber = '',
+    this.beneficiary,
+    this.lookupStatus = LookupStatus.idle,
+    this.lookupError,
   });
 
+  final DestinationMode mode;
+  final String accountNumber;
+  final BeneficiaryPreview? beneficiary;
+  final LookupStatus lookupStatus;
+  final String? lookupError;
   final String? fromAccountId;
   final String? toAccountId;
   final String amount;
@@ -47,7 +62,18 @@ class TransferState extends Equatable {
     TransferStatus? status,
     AppFailure? failure,
     TransferReceipt? receipt,
+    DestinationMode? mode,
+    String? accountNumber,
+    BeneficiaryPreview? beneficiary,
+    bool clearBeneficiary = false,
+    LookupStatus? lookupStatus,
+    String? lookupError,
   }) => TransferState(
+    mode: mode ?? this.mode,
+    accountNumber: accountNumber ?? this.accountNumber,
+    beneficiary: clearBeneficiary ? null : beneficiary ?? this.beneficiary,
+    lookupStatus: lookupStatus ?? this.lookupStatus,
+    lookupError: lookupError,
     fromAccountId: fromAccountId ?? this.fromAccountId,
     toAccountId: toAccountId ?? this.toAccountId,
     amount: amount ?? this.amount,
@@ -60,6 +86,11 @@ class TransferState extends Equatable {
 
   @override
   List<Object?> get props => [
+    mode,
+    accountNumber,
+    beneficiary,
+    lookupStatus,
+    lookupError,
     fromAccountId,
     toAccountId,
     amount,
@@ -71,7 +102,11 @@ class TransferState extends Equatable {
   ];
 }
 
-/// Transfer between the customer's own accounts.
+/// Transfer to an own account or, by account number, to anyone.
+///
+/// Third-party flow: the number is verified first (lookup shows the masked
+/// holder name) and review is blocked until a preview matches the number
+/// typed. Editing the number discards the preview and the idempotency key.
 ///
 /// Idempotency: a key is minted when the user confirms a given intent
 /// (from, to, amount, description) and reused for every retry of that same
@@ -103,6 +138,77 @@ class TransferCubit extends Cubit<TransferState> {
       _edit(state.copyWith(amount: v, errors: _without('amount')));
   void descriptionChanged(String v) => _edit(state.copyWith(description: v));
 
+  void modeChanged(DestinationMode mode) => _edit(
+    state.copyWith(mode: mode, errors: _without('to')),
+  );
+
+  void accountNumberChanged(String v) => _edit(
+    state.copyWith(
+      accountNumber: v,
+      clearBeneficiary: true,
+      lookupStatus: LookupStatus.idle,
+      errors: _without('to'),
+    ),
+  );
+
+  static final _accountNumberPattern = RegExp(r'^\d{10}$');
+
+  /// Verifies the typed number and shows who will receive the money.
+  Future<void> verifyBeneficiary() async {
+    final number = state.accountNumber.trim();
+    if (!_accountNumberPattern.hasMatch(number)) {
+      emit(
+        state.copyWith(
+          lookupStatus: LookupStatus.failed,
+          lookupError: 'El número de cuenta tiene 10 dígitos',
+        ),
+      );
+      return;
+    }
+    final from = _fromAccount();
+    if (from != null && from.accountNumber == number) {
+      emit(
+        state.copyWith(
+          lookupStatus: LookupStatus.failed,
+          lookupError: 'Es la misma cuenta de origen',
+        ),
+      );
+      return;
+    }
+    emit(
+      state.copyWith(
+        lookupStatus: LookupStatus.loading,
+        clearBeneficiary: true,
+      ),
+    );
+    final result = await _repository.lookupBeneficiary(number);
+    if (isClosed || state.accountNumber.trim() != number) return;
+    switch (result) {
+      case Success(:final value):
+        emit(
+          state.copyWith(
+            beneficiary: value,
+            lookupStatus: LookupStatus.found,
+            errors: _without('to'),
+          ),
+        );
+      case Failure(:final failure):
+        emit(
+          state.copyWith(
+            lookupStatus: LookupStatus.failed,
+            lookupError: transferFailureMessage(failure),
+          ),
+        );
+    }
+  }
+
+  Account? _fromAccount() {
+    for (final a in _accounts()) {
+      if (a.id == state.fromAccountId) return a;
+    }
+    return null;
+  }
+
   void _edit(TransferState next) {
     _idempotencyKey = null;
     emit(next.copyWith(status: TransferStatus.editing));
@@ -130,7 +236,12 @@ class TransferCubit extends Cubit<TransferState> {
     final result = await _repository.transfer(
       TransferRequest(
         fromAccountId: state.fromAccountId!,
-        toAccountId: state.toAccountId!,
+        toAccountId: state.mode == DestinationMode.own
+            ? state.toAccountId
+            : null,
+        toAccountNumber: state.mode == DestinationMode.thirdParty
+            ? state.beneficiary!.accountNumber
+            : null,
         amount: state.parsedAmount!,
         description: state.description.trim(),
         idempotencyKey: key,
@@ -142,6 +253,7 @@ class TransferCubit extends Cubit<TransferState> {
         _idempotencyKey = null;
         _analytics.track('transfer_success', {
           'amount_bucket': _bucket(state.parsedAmount!),
+          'destination': state.mode.name,
         }).ignore();
         emit(state.copyWith(status: TransferStatus.success, receipt: value));
       case Failure(:final failure):
@@ -157,13 +269,17 @@ class TransferCubit extends Cubit<TransferState> {
 
   Map<String, String> _validate() {
     final errors = <String, String>{};
-    final accounts = _accounts();
-    Account? from;
-    for (final a in accounts) {
-      if (a.id == state.fromAccountId) from = a;
-    }
+    final from = _fromAccount();
     if (from == null) errors['from'] = 'Selecciona la cuenta de origen';
-    if (state.toAccountId == null) {
+    if (state.mode == DestinationMode.thirdParty) {
+      final preview = state.beneficiary;
+      if (preview == null ||
+          preview.accountNumber != state.accountNumber.trim()) {
+        errors['to'] = 'Verifica el número de cuenta del destinatario';
+      } else if (from != null && preview.accountId == from.id) {
+        errors['to'] = 'Es la misma cuenta de origen';
+      }
+    } else if (state.toAccountId == null) {
       errors['to'] = 'Selecciona la cuenta de destino';
     } else if (state.toAccountId == state.fromAccountId) {
       errors['to'] = 'Elige una cuenta distinta a la de origen';

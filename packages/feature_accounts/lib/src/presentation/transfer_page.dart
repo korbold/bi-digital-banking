@@ -11,7 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Transfer between own accounts: form -> review -> receipt.
+/// Transfer to own accounts or to anyone by account number:
+/// form -> review -> receipt.
 /// Requires an [AccountsCubit] above it.
 class TransferPage extends StatelessWidget {
   const TransferPage({
@@ -145,20 +146,41 @@ class _Form extends StatelessWidget {
           onChanged: (v) => v == null ? null : cubit.fromChanged(v),
         ),
         const SizedBox(height: BiSpacing.md),
-        DropdownButtonFormField<String>(
-          key: const Key('transfer_to'),
-          initialValue: state.toAccountId,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: 'Hacia',
-            errorText: state.errors['to'],
-          ),
-          items: [
-            for (final a in list.where((a) => a.id != state.fromAccountId))
-              DropdownMenuItem(value: a.id, child: Text(_label(a))),
+        SegmentedButton<DestinationMode>(
+          key: const Key('transfer_mode'),
+          segments: const [
+            ButtonSegment(
+              value: DestinationMode.own,
+              label: Text('Mis cuentas'),
+              icon: Icon(Icons.account_balance_wallet_outlined),
+            ),
+            ButtonSegment(
+              value: DestinationMode.thirdParty,
+              label: Text('Otra persona'),
+              icon: Icon(Icons.person_outline),
+            ),
           ],
-          onChanged: (v) => v == null ? null : cubit.toChanged(v),
+          selected: {state.mode},
+          onSelectionChanged: (s) => cubit.modeChanged(s.first),
         ),
+        const SizedBox(height: BiSpacing.md),
+        if (state.mode == DestinationMode.own)
+          DropdownButtonFormField<String>(
+            key: const Key('transfer_to'),
+            initialValue: state.toAccountId,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'Hacia',
+              errorText: state.errors['to'],
+            ),
+            items: [
+              for (final a in list.where((a) => a.id != state.fromAccountId))
+                DropdownMenuItem(value: a.id, child: Text(_label(a))),
+            ],
+            onChanged: (v) => v == null ? null : cubit.toChanged(v),
+          )
+        else
+          _ThirdPartyDestination(state: state),
         const SizedBox(height: BiSpacing.md),
         TextFormField(
           key: const Key('transfer_amount'),
@@ -238,7 +260,12 @@ class _Review extends StatelessWidget {
                 ),
                 const Divider(height: BiSpacing.xl),
                 _Row('Desde', _accountLabel(accounts, state.fromAccountId)),
-                _Row('Hacia', _accountLabel(accounts, state.toAccountId)),
+                _Row(
+                  'Hacia',
+                  state.mode == DestinationMode.thirdParty
+                      ? _beneficiaryLabel(state.beneficiary!)
+                      : _accountLabel(accounts, state.toAccountId),
+                ),
                 if (state.description.trim().isNotEmpty)
                   _Row('Descripción', state.description.trim()),
                 const _Row('Costo', r'$0.00'),
@@ -301,6 +328,16 @@ class _Receipt extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
+        if (receipt.isThirdParty) ...[
+          const SizedBox(height: BiSpacing.sm),
+          Text(
+            'Enviaste ${formatMoney(state.parsedAmount ?? 0)} a '
+            '${receipt.toHolderName ?? 'el destinatario'} '
+            '(${receipt.toMaskedNumber ?? ''})',
+            key: const Key('transfer_receipt_summary'),
+            textAlign: TextAlign.center,
+          ),
+        ],
         const SizedBox(height: BiSpacing.lg),
         Card(
           child: Padding(
@@ -314,8 +351,16 @@ class _Receipt extends StatelessWidget {
                 const Divider(height: BiSpacing.xl),
                 _Row('Desde', _accountLabel(accounts, receipt.fromAccountId)),
                 _Row('Nuevo saldo', formatMoney(receipt.fromBalance)),
-                _Row('Hacia', _accountLabel(accounts, receipt.toAccountId)),
-                _Row('Nuevo saldo', formatMoney(receipt.toBalance)),
+                if (receipt.isThirdParty)
+                  _Row(
+                    'Hacia',
+                    '${receipt.toHolderName ?? '—'} (${receipt.toMaskedNumber ?? ''})',
+                  )
+                else ...[
+                  _Row('Hacia', _accountLabel(accounts, receipt.toAccountId)),
+                  if (receipt.toBalance != null)
+                    _Row('Nuevo saldo', formatMoney(receipt.toBalance!)),
+                ],
                 _Row('Comprobante', receipt.transferId),
                 _Row(
                   'Fecha',
@@ -331,6 +376,102 @@ class _Receipt extends StatelessWidget {
           onPressed: onClose,
           child: const Text('Listo'),
         ),
+      ],
+    );
+  }
+}
+
+String _beneficiaryLabel(BeneficiaryPreview b) =>
+    '${b.holderName} · ${b.type.label} ${b.maskedNumber}';
+
+/// Account-number input, "Verificar" and the beneficiary confirmation card.
+class _ThirdPartyDestination extends StatelessWidget {
+  const _ThirdPartyDestination({required this.state});
+
+  final TransferState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<TransferCubit>();
+    final loading = state.lookupStatus == LookupStatus.loading;
+    final preview = state.beneficiary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextFormField(
+                key: const Key('transfer_account_number'),
+                initialValue: state.accountNumber,
+                onChanged: cubit.accountNumberChanged,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                decoration: InputDecoration(
+                  labelText: 'Número de cuenta del destinatario',
+                  helperText: '10 dígitos',
+                  errorText:
+                      state.errors['to'] ??
+                      (state.lookupStatus == LookupStatus.failed
+                          ? state.lookupError
+                          : null),
+                ),
+              ),
+            ),
+            const SizedBox(width: BiSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.only(top: BiSpacing.xs),
+              child: SizedBox(
+                height: 52,
+                child: OutlinedButton(
+                  key: const Key('transfer_verify'),
+                  onPressed: loading ? null : cubit.verifyBeneficiary,
+                  child: loading
+                      ? Semantics(
+                          label: 'Verificando cuenta',
+                          child: const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : const Text('Verificar'),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (preview != null) ...[
+          const SizedBox(height: BiSpacing.sm),
+          Semantics(
+            key: const Key('transfer_beneficiary'),
+            container: true,
+            liveRegion: true,
+            label:
+                'Destinatario verificado: ${preview.holderName}, '
+                'cuenta de ${preview.type.label} terminada en '
+                '${preview.maskedNumber.replaceAll('*', '')}',
+            excludeSemantics: true,
+            child: Card(
+              child: ListTile(
+                leading: const Icon(
+                  Icons.verified_user_outlined,
+                  color: BiColors.positive,
+                ),
+                title: Text('Titular: ${preview.holderName}'),
+                subtitle: Text(
+                  preview.isOwn
+                      ? 'Es una de tus cuentas · '
+                            '${preview.type.label} ${preview.maskedNumber}'
+                      : '${preview.type.label} ${preview.maskedNumber}',
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

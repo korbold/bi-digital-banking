@@ -14,4 +14,7 @@ abstract interface class AccountsRepository {
   });
 
   Future<Result<TransferReceipt>> transfer(TransferRequest request);
+
+  /// Who owns [accountNumber]; used to confirm a third-party transfer.
+  Future<Result<BeneficiaryPreview>> lookupBeneficiary(String accountNumber);
 }

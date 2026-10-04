@@ -149,25 +149,9 @@ class AccountsCubit extends Cubit<AccountsState> {
     final updated = [
       for (final a in state.accounts)
         if (a.id == receipt.fromAccountId)
-          Account(
-            id: a.id,
-            type: a.type,
-            alias: a.alias,
-            number: a.number,
-            currency: a.currency,
-            balance: receipt.fromBalance,
-            available: receipt.fromBalance,
-          )
-        else if (a.id == receipt.toAccountId)
-          Account(
-            id: a.id,
-            type: a.type,
-            alias: a.alias,
-            number: a.number,
-            currency: a.currency,
-            balance: receipt.toBalance,
-            available: receipt.toBalance,
-          )
+          a.withBalance(receipt.fromBalance)
+        else if (a.id == receipt.toAccountId && receipt.toBalance != null)
+          a.withBalance(receipt.toBalance!)
         else
           a,
     ];

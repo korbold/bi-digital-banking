@@ -56,6 +56,8 @@ String transferFailureMessage(AppFailure failure) => switch (failure) {
   ValidationFailure(code: 'same_account') =>
     'La cuenta de origen y destino deben ser distintas.',
   ValidationFailure(code: 'invalid_amount') => 'El monto no es válido.',
+  ValidationFailure(code: 'beneficiary_not_found') =>
+    'No encontramos una cuenta con ese número.',
   ValidationFailure(code: 'idempotency_conflict') =>
     'Esta transferencia ya está en proceso.',
   OfflineFailure() =>
