@@ -40,3 +40,15 @@ class ProfileUnavailablePage extends StatelessWidget {
     ),
   );
 }
+
+class UnavailableRoutePage extends StatelessWidget {
+  const UnavailableRoutePage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(),
+    body: const ErrorView(
+      message: 'Esta sección aún no está disponible en tu versión de la app.',
+    ),
+  );
+}

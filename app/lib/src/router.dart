@@ -38,6 +38,15 @@ GoRouter buildRouter(SessionCubit session) => GoRouter(
   initialLocation: Routes.splash,
   refreshListenable: StreamRefresh(session.stream),
   observers: [FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)],
+  // Server-driven actions may reference routes an older app build does not
+  // know. Degrade gracefully and report it instead of a router error page.
+  errorBuilder: (context, state) {
+    sl<AppLogger>().warning(
+      'Unknown route',
+      context: {'location': state.uri.toString()},
+    );
+    return const UnavailableRoutePage();
+  },
   redirect: (context, state) {
     final location = state.matchedLocation;
     return switch (session.state) {
