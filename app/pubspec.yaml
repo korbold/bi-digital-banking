@@ -44,3 +44,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon.png
+  adaptive_icon_background: "#E6780A"
+  adaptive_icon_foreground: assets/icon/foreground.png
+  remove_alpha_ios: true
+  min_sdk_android: 23

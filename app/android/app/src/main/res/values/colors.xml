@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="notification_accent">#E6780A</color>
+	<color name="ic_launcher_background">#E6780A</color>
+</resources>
