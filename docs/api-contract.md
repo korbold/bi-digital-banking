@@ -1,6 +1,6 @@
 # Contrato BFF (Backend for Frontend)
 
-Base URL: `https://bi-digital-banking.vercel.app` (Vercel Functions, Node 20, TypeScript).
+Base URL: `https://bi-digital-banking.vercel.app` (Vercel Functions, Node 22, TypeScript).
 Persistencia: Cloud Firestore vía `firebase-admin`. Identidad: Firebase Auth.
 
 ## Convenciones
@@ -40,7 +40,7 @@ en Firestore y aparece en el home de los segmentos objetivo **sin publicar la ap
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/health` | `{ status: "ok", time }` sin auth |
+| GET | `/api/health` | `{ status: "ok", time, version }` sin auth ni Firebase |
 | GET | `/api/me` | Perfil. 404 `onboarding_required` si no hay cliente |
 | POST | `/api/onboarding` | Alta del cliente (idempotente por uid) |
 | PATCH | `/api/me/preferences` | `{ interests: string[] }` |
@@ -51,8 +51,8 @@ en Firestore y aparece en el home de los segmentos objetivo **sin publicar la ap
 | POST | `/api/events` | `{ type: "action_used"\|"screen_view", target: string }` → 202 |
 | POST | `/api/devices` | `{ token, platform: "android"\|"ios" }` → 204 |
 | POST | `/api/notifications/test` | Envía push de prueba a los dispositivos del usuario |
-| GET | `/api/fx?base=USD&symbols=EUR,COP,PEN` | Proxy a API pública de tipos de cambio (open.er-api.com), cache 10 min |
-| POST | `/api/insurance/quote` | Usado por la micro-app de seguros: `{ product: "travel"\|"device"\|"life", coverage: number }` → `{ quoteId, monthlyPremium, currency, validUntil }` |
+| GET | `/api/fx?base=USD&symbols=EUR,COP,PEN` | Proxy a open.er-api.com, cache 10 min, timeout 3 s → `{ base, rates, updatedAt, provider, stale }`. Si el proveedor cae y hay cache: 200 con `stale: true`; sin cache: 503 `upstream_unavailable` |
+| POST | `/api/insurance/quote` | Usado por la micro-app de seguros: `{ product: "travel"\|"device"\|"life", coverage: number }` → `{ quoteId, product, coverage, monthlyPremium, currency, validUntil }`. Rangos: travel 1.000–50.000, device 200–3.000, life 10.000–200.000 (fuera de rango: 422 `invalid_amount`) |
 
 ### POST /api/onboarding
 
@@ -66,6 +66,12 @@ en Firestore y aparece en el home de los segmentos objetivo **sin publicar la ap
 ```
 Segmentación: `monthlyIncome >= 5000` ⇒ premium; `ageRange == 18-25` ⇒ young; si no ⇒ retail.
 Crea 2 cuentas (ahorros y corriente) con ~25 movimientos realistas de los últimos 45 días.
+
+- `documentId` debe ser una **cédula ecuatoriana válida** (10 dígitos, provincia 01–24/30, dígito verificador
+  módulo 10). Si no: 400 `invalid_request` "Cédula inválida".
+- `interests` válidos: `travel, tech, savings, shopping, food, health, education, investing` (los demás se ignoran).
+- Idempotente: si el cliente ya existe responde **200** con el perfil existente (201 sólo al crear).
+- `onboarding_required`: `GET /api/me` responde **404**; el resto de endpoints de cliente responde **422**.
 
 ### Account / Movement
 
@@ -86,6 +92,11 @@ Crea 2 cuentas (ahorros y corriente) con ~25 movimientos realistas de los últim
   "createdAt": "..." }
 ```
 Débito y crédito en **una transacción Firestore**. Tras confirmar, push "Transferencia realizada".
+
+- Sin `Idempotency-Key` (8–100 chars): 400. Reintento con la misma clave y el mismo payload: **200** con el mismo
+  body y header `Idempotent-Replayed: true` (no se mueve dinero dos veces). Misma clave con otro payload: 409.
+- Monto: > 0, máximo 2 decimales, tope $10.000 (si no: 422 `invalid_amount`). Cuenta inexistente: 404 `not_found`.
+- La push es best-effort: si FCM falla, la transferencia igual responde 201.
 
 ## SDUI — GET /api/home
 
