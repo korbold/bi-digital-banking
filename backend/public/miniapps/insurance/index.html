@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Seguros</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app" aria-labelledby="title">
+    <header class="hero">
+      <p class="eyebrow">Micro-app de socio · Seguros</p>
+      <h1 id="title">Protege lo que más te importa</h1>
+      <p id="greeting" class="muted">Cotiza en segundos, sin papeleo.</p>
+    </header>
+
+    <div id="demo-banner" class="banner" role="status" hidden>
+      Modo demo: abre esta micro-app desde la app del banco para cotizar con tu perfil.
+      Aquí verás solo una estimación referencial.
+    </div>
+
+    <form id="quote-form" novalidate>
+      <fieldset class="products">
+        <legend>¿Qué quieres asegurar?</legend>
+        <label class="product">
+          <input type="radio" name="product" value="travel" checked>
+          <span class="product-card"><span class="icon" aria-hidden="true">✈️</span><span><strong>Viaje</strong><small>Asistencia médica y equipaje</small></span></span>
+        </label>
+        <label class="product">
+          <input type="radio" name="product" value="device">
+          <span class="product-card"><span class="icon" aria-hidden="true">📱</span><span><strong>Celular</strong><small>Robo y daño accidental</small></span></span>
+        </label>
+        <label class="product">
+          <input type="radio" name="product" value="life">
+          <span class="product-card"><span class="icon" aria-hidden="true">💙</span><span><strong>Vida</strong><small>Respaldo para tu familia</small></span></span>
+        </label>
+      </fieldset>
+
+      <div class="coverage">
+        <div class="coverage-head">
+          <label for="coverage">Monto de cobertura</label>
+          <output id="coverage-value" for="coverage">$5,000</output>
+        </div>
+        <input id="coverage" name="coverage" type="range" min="1000" max="50000" step="500" value="5000">
+        <div class="range-hints muted"><span id="min-hint">$1,000</span><span id="max-hint">$50,000</span></div>
+      </div>
+
+      <button id="quote-btn" class="btn primary" type="submit">Cotizar</button>
+    </form>
+
+    <section id="result" class="result" aria-live="polite" hidden>
+      <p class="muted" id="result-label">Tu prima mensual</p>
+      <p class="premium" id="premium">$0.00</p>
+      <dl class="details">
+        <div><dt>Cobertura</dt><dd id="result-coverage">-</dd></div>
+        <div><dt>Válida hasta</dt><dd id="result-valid">-</dd></div>
+      </dl>
+      <button id="buy-btn" class="btn primary" type="button">Contratar</button>
+    </section>
+
+    <div id="error" class="error" role="alert" hidden>
+      <span id="error-text"></span>
+      <button id="retry-btn" class="btn ghost" type="button">Reintentar</button>
+    </div>
+
+    <footer class="muted footer">
+      Servicio de un aliado externo integrado en la banca digital. Precios referenciales para la demo.
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
