@@ -27,15 +27,15 @@ class ChaosPanelPage extends StatefulWidget {
 
 class _ChaosPanelPageState extends State<ChaosPanelPage> {
   // Breaker state changes as the app makes requests; repaint every second.
-  late final Timer _ticker = Timer.periodic(
-    const Duration(seconds: 1),
-    (_) => setState(() {}),
-  );
+  late final Timer _ticker;
 
   @override
   void initState() {
     super.initState();
-    _ticker;
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => setState(() {}),
+    );
   }
 
   @override
