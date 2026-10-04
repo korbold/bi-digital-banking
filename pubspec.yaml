@@ -1,0 +1,36 @@
+name: bi_digital_banking_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.11.4
+
+workspace:
+  - app
+  - packages/core
+  - packages/core_network
+  - packages/design_system
+  - packages/sdui
+  - packages/feature_auth
+  - packages/feature_accounts
+  - packages/feature_home
+  - packages/feature_miniapps
+  - packages/feature_notifications
+
+dev_dependencies:
+  melos: ^8.0.0
+
+melos:
+  name: bi_digital_banking
+  scripts:
+    analyze:
+      description: Static analysis across every package.
+      run: melos exec -c 4 -- flutter analyze --no-fatal-infos
+    test:
+      description: Unit and widget tests across every package that has tests.
+      run: melos exec -c 1 --dir-exists=test -- flutter test --coverage
+    format:
+      description: Check formatting.
+      run: dart format --set-exit-if-changed .
+    e2e:
+      description: Critical E2E flow on a connected device.
+      run: cd app && flutter test integration_test

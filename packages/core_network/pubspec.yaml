@@ -1,0 +1,26 @@
+name: core_network
+description: Resilient HTTP client - retries, circuit breaker, offline cache, chaos injection.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.4
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+  dio: ^5.8.0
+  connectivity_plus: ^6.1.4
+  hive_ce: ^2.11.3
+  equatable: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^9.0.0
+  mocktail: ^1.0.4
+
+flutter:

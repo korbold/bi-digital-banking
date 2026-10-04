@@ -1,0 +1,27 @@
+name: feature_auth
+description: Onboarding and authentication domain.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.4
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+  design_system:
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
+  firebase_auth: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^9.0.0
+  mocktail: ^1.0.4
+  bloc_test: ^10.0.0
+
+flutter:
