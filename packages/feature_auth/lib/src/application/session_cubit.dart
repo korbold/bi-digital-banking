@@ -115,6 +115,14 @@ class SessionCubit extends Cubit<SessionState> {
     emit(SessionAuthenticated(user, customer));
   }
 
+  /// Profile edited (e.g. interests): keep the session in sync so dependent
+  /// UI (personalized home) can react.
+  void customerUpdated(Customer customer) {
+    final user = _user;
+    if (user == null || state is! SessionAuthenticated) return;
+    emit(SessionAuthenticated(user, customer));
+  }
+
   Future<void> signOut() async {
     await _analytics.track('sign_out');
     await _auth.signOut();

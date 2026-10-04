@@ -7,4 +7,7 @@ abstract interface class CustomerRepository {
   Future<Result<Customer?>> getMe();
 
   Future<Result<Customer>> completeOnboarding(OnboardingRequest request);
+
+  /// Replaces the declared interests; the BFF re-personalizes home from them.
+  Future<Result<Customer>> updateInterests(List<String> interests);
 }

@@ -32,4 +32,12 @@ class ApiCustomerRepository implements CustomerRepository {
     idempotencyKey: 'onboarding-${request.documentId}',
     decode: (json) => Customer.fromJson(json! as Map<String, dynamic>),
   );
+
+  @override
+  Future<Result<Customer>> updateInterests(List<String> interests) =>
+      _api.patch<Customer>(
+        '/api/me/preferences',
+        body: {'interests': interests},
+        decode: (json) => Customer.fromJson(json! as Map<String, dynamic>),
+      );
 }

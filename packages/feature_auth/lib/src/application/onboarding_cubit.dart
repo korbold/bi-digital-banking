@@ -17,10 +17,11 @@ const interestOptions = {
   'travel': 'Viajes',
   'tech': 'Tecnología',
   'savings': 'Ahorro',
-  'home': 'Hogar',
+  'shopping': 'Compras',
+  'food': 'Gastronomía',
   'health': 'Salud',
   'education': 'Educación',
-  'entrepreneurship': 'Emprendimiento',
+  'investing': 'Inversiones',
 };
 
 class OnboardingState extends Equatable {
