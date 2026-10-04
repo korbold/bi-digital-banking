@@ -43,6 +43,18 @@ void main() {
     final email = 'e2e+${DateTime.now().millisecondsSinceEpoch}@bidigital.test';
 
     await app.main();
+    // The device may keep a previous session: start every run logged out.
+    await tester.pumpUntilFound(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            (w.data == '¿Eres nuevo? Abre tu cuenta' || w.data == 'BI Digital'),
+      ),
+    );
+    if (find.text('BI Digital').evaluate().isNotEmpty) {
+      await tester.tapAndPump(find.byTooltip('Más opciones'));
+      await tester.tapAndPump(find.text('Cerrar sesión'));
+    }
     await tester.pumpUntilFound(find.text('¿Eres nuevo? Abre tu cuenta'));
 
     // 1. Register

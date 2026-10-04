@@ -94,6 +94,14 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final session = context.read<SessionCubit>();
+    // Saving interests in the profile changes the server-side composition:
+    // a new key recreates HomePage (and its cubit) so it reloads at once.
+    final interestsKey = context.select<SessionCubit, String>(
+      (s) => switch (s.state) {
+        SessionAuthenticated(:final customer) => customer.interests.join(','),
+        _ => '',
+      },
+    );
     final maintenance = sl<RemoteFlags>().maintenanceMessage;
     return Scaffold(
       appBar: AppBar(
@@ -110,10 +118,12 @@ class _HomeShellState extends State<HomeShell> {
             onSelected: (value) => switch (value) {
               'push' => _sendTestPush(),
               'transfer' => context.push(Routes.transfer),
+              'profile' => context.push(Routes.profile),
               _ => session.signOut(),
             },
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'transfer', child: Text('Transferir')),
+              PopupMenuItem(value: 'profile', child: Text('Mi perfil')),
               PopupMenuItem(
                 value: 'push',
                 child: Text('Enviarme una notificación de prueba'),
@@ -140,6 +150,7 @@ class _HomeShellState extends State<HomeShell> {
             ),
           Expanded(
             child: HomePage(
+              key: ValueKey('home-$interestsKey'),
               repository: sl(),
               registry: _registry,
               connectivityChanges: sl<OnlineSignal>().changes,

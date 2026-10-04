@@ -24,6 +24,8 @@ abstract final class Routes {
   static const home = '/home';
   static const transfer = '/transfer';
   static const chaos = '/demo/chaos';
+  static const accounts = '/accounts';
+  static const profile = '/profile';
   static String account(String id) => '/accounts/$id';
   static String miniApp(String id) => '/miniapp/$id';
 }
@@ -92,6 +94,24 @@ GoRouter buildRouter(SessionCubit session) => GoRouter(
       builder: (_, _) => ProfileUnavailablePage(session: session),
     ),
     GoRoute(path: Routes.home, builder: (_, _) => const HomeShell()),
+    GoRoute(
+      path: Routes.accounts,
+      builder: (context, _) => AccountsListPage(
+        onAccountTap: (account) => context.push(Routes.account(account.id)),
+      ),
+    ),
+    GoRoute(
+      path: Routes.profile,
+      redirect: (_, _) =>
+          session.state is SessionAuthenticated ? null : Routes.home,
+      builder: (context, _) => ProfilePage(
+        customer: (session.state as SessionAuthenticated).customer,
+        customerRepository: sl(),
+        analytics: sl(),
+        onSaved: session.customerUpdated,
+        onSignOut: session.signOut,
+      ),
+    ),
     GoRoute(
       path: '/accounts/:id',
       builder: (context, state) => AccountDetailPage(

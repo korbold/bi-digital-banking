@@ -9,5 +9,6 @@ export 'src/domain/accounts_repository.dart';
 export 'src/domain/models.dart';
 export 'src/presentation/account_detail_page.dart';
 export 'src/presentation/account_summary_section.dart';
+export 'src/presentation/accounts_list_page.dart';
 export 'src/presentation/formatting.dart';
 export 'src/presentation/transfer_page.dart';
