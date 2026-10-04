@@ -27,7 +27,10 @@ void main() {
       expect(const ServerFailure('boom', statusCode: 503).isRetryable, isTrue);
       expect(const ServerFailure('bad', statusCode: 404).isRetryable, isFalse);
       expect(const UnauthorizedFailure().isRetryable, isFalse);
-      expect(const ValidationFailure('insufficient funds').isRetryable, isFalse);
+      expect(
+        const ValidationFailure('insufficient funds').isRetryable,
+        isFalse,
+      );
     });
   });
 }
