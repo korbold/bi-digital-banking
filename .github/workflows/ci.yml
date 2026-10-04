@@ -1,0 +1,95 @@
+name: CI
+
+# Trunk-based: every push to main and every short-lived PR runs the full gate.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: Flutter · analyze, test, coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.6
+          channel: stable
+          cache: true
+      - name: Resolve workspace
+        run: flutter pub get
+      - name: Format check
+        run: dart format --output=none --set-exit-if-changed $(git ls-files '*.dart' | grep -v firebase_options.dart)
+      - name: Analyze
+        run: flutter analyze
+      - name: Unit + widget tests
+        run: |
+          for pkg in packages/* app; do
+            if [ -d "$pkg/test" ]; then
+              echo "::group::$pkg"
+              (cd "$pkg" && flutter test --coverage) || exit 1
+              echo "::endgroup::"
+            fi
+          done
+      - name: Coverage summary
+        run: |
+          sudo apt-get install -y lcov >/dev/null
+          files=$(ls packages/*/coverage/lcov.info app/coverage/lcov.info 2>/dev/null || true)
+          args=""; for f in $files; do args="$args -a $f"; done
+          lcov $args -o coverage.info >/dev/null
+          lcov --summary coverage.info | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.info
+
+  backend:
+    name: BFF · typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+
+  android-build:
+    name: Android · release APK
+    needs: [flutter]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.41.6
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build APK
+        working-directory: app
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
