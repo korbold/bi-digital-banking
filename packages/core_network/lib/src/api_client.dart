@@ -158,6 +158,25 @@ class ApiClient {
     };
   }
 
+  /// Partial update with set semantics (same body ⇒ same state), so it is
+  /// safe to retry on transient failures without an idempotency key.
+  Future<Result<T>> patch<T>(
+    String path, {
+    required T Function(Object? json) decode,
+    Object? body,
+  }) async {
+    final result = await _send<Object?>(
+      'PATCH',
+      path,
+      body: body,
+      retryable: true,
+    );
+    return switch (result) {
+      Success(:final value) => _safeDecode(() => decode(value)),
+      Failure(:final failure) => Result.failure(failure),
+    };
+  }
+
   Future<void> clearCache() => _cache.clear();
 
   Result<Fetched<T>> _decode<T>(

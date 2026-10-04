@@ -220,4 +220,20 @@ void main() {
     ]);
     expect(emissions.last.valueOrNull?.data['v'], 2);
   });
+
+  test('PATCH is retried on transient failures (set semantics)', () async {
+    final client = build(
+      script: [
+        (503, null),
+        (200, {'ok': true}),
+      ],
+    );
+    final result = await client.patch(
+      '/api/me/preferences',
+      body: {'interests': <String>[]},
+      decode: (j) => j! as Map,
+    );
+    expect(result.valueOrNull?['ok'], isTrue);
+    expect(adapter.requests.map((r) => r.method), ['PATCH', 'PATCH']);
+  });
 }
