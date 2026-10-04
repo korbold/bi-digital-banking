@@ -1,6 +1,6 @@
-import { empty, oneOf, readJson, requireString } from '../src/http.js';
-import { route } from '../src/infra/route.js';
-import type { EventType } from '../src/types.js';
+import { empty, oneOf, readJson, requireString } from '../http.js';
+import { route } from '../infra/route.js';
+import type { EventType } from '../types.js';
 
 const EVENT_TYPES: readonly EventType[] = ['action_used', 'screen_view'];
 

@@ -4,23 +4,46 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "functions": {
-    "api/**/*.ts": { "maxDuration": 10 }
+    "api/index.ts": {
+      "maxDuration": 10
+    }
   },
   "headers": [
     {
       "source": "/miniapps/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=300" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
       ]
     },
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path+",
+      "destination": "/api?__path=:path+"
     }
   ]
 }

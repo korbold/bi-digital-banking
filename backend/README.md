@@ -10,7 +10,8 @@ Contrato completo: [`../docs/api-contract.md`](../docs/api-contract.md).
 
 ```
 backend/
-├── api/                    # Handlers finos (una función por endpoint, Web Request/Response)
+├── api/index.ts            # Única Vercel Function (límite Hobby: 12) → src/router.ts
+├── src/handlers/           # Un archivo por endpoint (Web Request/Response)
 ├── src/
 │   ├── domain/             # Reglas puras, sin I/O: segmentación, seed, personalización (SDUI), seguros
 │   ├── services/           # Casos de uso: onboarding, transferencias, FX, push

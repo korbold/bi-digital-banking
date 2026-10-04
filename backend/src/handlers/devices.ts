@@ -1,6 +1,6 @@
-import { empty, oneOf, readJson, requireString } from '../src/http.js';
-import { route } from '../src/infra/route.js';
-import type { Platform } from '../src/types.js';
+import { empty, oneOf, readJson, requireString } from '../http.js';
+import { route } from '../infra/route.js';
+import type { Platform } from '../types.js';
 
 const PLATFORMS: readonly Platform[] = ['android', 'ios'];
 

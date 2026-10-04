@@ -1,7 +1,7 @@
-import { badRequest, json, readJson } from '../../src/http.js';
-import { sanitizeInterests } from '../../src/domain/segmentation.js';
-import { requireCustomer, route } from '../../src/infra/route.js';
-import { profileView } from '../../src/services/onboarding.js';
+import { badRequest, json, readJson } from '../http.js';
+import { sanitizeInterests } from '../domain/segmentation.js';
+import { requireCustomer, route } from '../infra/route.js';
+import { profileView } from '../services/onboarding.js';
 
 export const PATCH = route({ name: 'PATCH /api/me/preferences' }, async (ctx) => {
   const customer = await requireCustomer(ctx);

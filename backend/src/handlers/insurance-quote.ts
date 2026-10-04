@@ -1,6 +1,6 @@
-import { json, oneOf, readJson, requireNumber } from '../../src/http.js';
-import { INSURANCE_PRODUCTS, quoteInsurance } from '../../src/domain/insurance.js';
-import { requireCustomer, route } from '../../src/infra/route.js';
+import { json, oneOf, readJson, requireNumber } from '../http.js';
+import { INSURANCE_PRODUCTS, quoteInsurance } from '../domain/insurance.js';
+import { requireCustomer, route } from '../infra/route.js';
 
 export const POST = route({ name: 'POST /api/insurance/quote' }, async (ctx) => {
   const customer = await requireCustomer(ctx);

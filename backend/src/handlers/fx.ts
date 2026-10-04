@@ -1,5 +1,5 @@
-import { json } from '../src/http.js';
-import { route } from '../src/infra/route.js';
+import { json } from '../http.js';
+import { route } from '../infra/route.js';
 
 export const GET = route({ name: 'GET /api/fx' }, async (ctx) => {
   const base = ctx.url.searchParams.get('base') ?? 'USD';

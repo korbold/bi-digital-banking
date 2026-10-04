@@ -1,5 +1,5 @@
-import { json } from '../../src/http.js';
-import { requireCustomer, route } from '../../src/infra/route.js';
+import { json } from '../http.js';
+import { requireCustomer, route } from '../infra/route.js';
 
 export const GET = route({ name: 'GET /api/accounts' }, async (ctx) => {
   await requireCustomer(ctx);

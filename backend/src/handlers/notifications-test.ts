@@ -1,6 +1,6 @@
-import { json } from '../../src/http.js';
-import { firstName } from '../../src/domain/segmentation.js';
-import { requireCustomer, route } from '../../src/infra/route.js';
+import { json } from '../http.js';
+import { firstName } from '../domain/segmentation.js';
+import { requireCustomer, route } from '../infra/route.js';
 
 export const POST = route({ name: 'POST /api/notifications/test' }, async (ctx) => {
   const customer = await requireCustomer(ctx);

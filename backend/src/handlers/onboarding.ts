@@ -1,6 +1,6 @@
-import { json, readJson } from '../src/http.js';
-import { route } from '../src/infra/route.js';
-import { onboard, profileView } from '../src/services/onboarding.js';
+import { json, readJson } from '../http.js';
+import { route } from '../infra/route.js';
+import { onboard, profileView } from '../services/onboarding.js';
 
 export const POST = route({ name: 'POST /api/onboarding' }, async (ctx) => {
   const { customer, created } = await onboard(ctx.deps.repo, ctx.uid, ctx.email, await readJson(ctx.req));

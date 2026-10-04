@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GET as getAccounts } from '../api/accounts/index.js';
-import { GET as getHealth } from '../api/health.js';
-import { POST as postTransfer } from '../api/transfers.js';
+import { GET as getAccounts } from '../src/handlers/accounts.js';
+import { GET as getHealth } from '../src/handlers/health.js';
+import { POST as postTransfer } from '../src/handlers/transfers.js';
 import { setDeps } from '../src/infra/container.js';
 import { MemoryBankRepository } from '../src/repo/memory.js';
 import { FxService } from '../src/services/fx.js';

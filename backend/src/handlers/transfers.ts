@@ -1,6 +1,6 @@
-import { json, readJson, requireNumber, requireString } from '../src/http.js';
-import { requireCustomer, route } from '../src/infra/route.js';
-import { transfer } from '../src/services/transfers.js';
+import { json, readJson, requireNumber, requireString } from '../http.js';
+import { requireCustomer, route } from '../infra/route.js';
+import { transfer } from '../services/transfers.js';
 
 export const POST = route({ name: 'POST /api/transfers' }, async (ctx) => {
   await requireCustomer(ctx);

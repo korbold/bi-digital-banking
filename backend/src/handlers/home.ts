@@ -1,7 +1,7 @@
-import { json } from '../src/http.js';
-import { buildHome } from '../src/domain/personalization.js';
-import { startOfLocalMonth } from '../src/domain/time.js';
-import { publicBaseUrl, requireCustomer, route } from '../src/infra/route.js';
+import { json } from '../http.js';
+import { buildHome } from '../domain/personalization.js';
+import { startOfLocalMonth } from '../domain/time.js';
+import { publicBaseUrl, requireCustomer, route } from '../infra/route.js';
 
 const THIRTY_DAYS_MS = 30 * 86_400_000;
 
