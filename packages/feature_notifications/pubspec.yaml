@@ -12,6 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
   core:
+  core_network:
+  firebase_core: ^4.1.0
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
   firebase_messaging: ^16.0.0
