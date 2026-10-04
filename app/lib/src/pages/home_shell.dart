@@ -1,6 +1,7 @@
 import 'package:bi_digital_banking/src/config/env.dart';
 import 'package:bi_digital_banking/src/config/remote_flags.dart';
 import 'package:bi_digital_banking/src/di.dart';
+import 'package:bi_digital_banking/src/online_signal.dart';
 import 'package:bi_digital_banking/src/router.dart';
 import 'package:bi_digital_banking/src/theme_controller.dart';
 import 'package:core/core.dart';
@@ -141,6 +142,7 @@ class _HomeShellState extends State<HomeShell> {
             child: HomePage(
               repository: sl(),
               registry: _registry,
+              connectivityChanges: sl<OnlineSignal>().changes,
               onAction: _onAction,
               onScreenLoaded: (screen) =>
                   sl<ThemeController>().applySeed(screen.themeSeed),

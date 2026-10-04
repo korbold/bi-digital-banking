@@ -1,6 +1,7 @@
 import 'package:bi_digital_banking/src/config/env.dart';
 import 'package:bi_digital_banking/src/config/remote_flags.dart';
 import 'package:bi_digital_banking/src/observability/firebase_observability.dart';
+import 'package:bi_digital_banking/src/online_signal.dart';
 import 'package:core/core.dart';
 import 'package:core_network/core_network.dart';
 import 'package:dio/dio.dart';
@@ -64,6 +65,7 @@ Future<void> configureDependencies() async {
   sl
     ..registerSingleton(chaos)
     ..registerSingleton(connectivity)
+    ..registerSingleton(OnlineSignal(connectivity, chaos))
     ..registerSingleton(breakers)
     ..registerSingleton(api)
     // Repositories per domain

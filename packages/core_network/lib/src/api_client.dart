@@ -202,6 +202,7 @@ class ApiClient {
         await _sleep(_retryPolicy.delayFor(attempt - 1, _random));
       }
 
+      final requestId = _requestId();
       try {
         final token = await _tokenProvider(forceRefresh: forceRefreshToken);
         final response = await _tracer.trace(
@@ -215,7 +216,7 @@ class ApiClient {
               headers: {
                 ...headers,
                 if (token != null) 'Authorization': 'Bearer $token',
-                'X-Request-Id': _requestId(),
+                'X-Request-Id': requestId,
               },
             ),
           ),
@@ -234,7 +235,13 @@ class ApiClient {
         if (_countsAgainstBreaker(last)) breaker.recordFailure();
         _logger.warning(
           '$method $path failed (attempt ${attempt + 1}/$attempts)',
-          context: {'failure': last.toString(), 'breaker': breaker.state.name},
+          // requestId is the same id the BFF logs: it joins a Crashlytics
+          // breadcrumb with the server-side log line during an incident.
+          context: {
+            'requestId': requestId,
+            'failure': last.toString(),
+            'breaker': breaker.state.name,
+          },
         );
         if (!last.isRetryable) break;
       }

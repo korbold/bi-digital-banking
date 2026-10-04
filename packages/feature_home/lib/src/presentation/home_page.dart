@@ -18,6 +18,7 @@ class HomePage extends StatelessWidget {
     this.onSkipped,
     this.onSectionError,
     this.onScreenLoaded,
+    this.connectivityChanges,
   });
 
   final HomeRepository repository;
@@ -29,9 +30,13 @@ class HomePage extends StatelessWidget {
   /// e.g. to re-tint the app theme with `screen.themeSeed`.
   final ValueChanged<SduiScreen>? onScreenLoaded;
 
+  /// Emits `true` when the device is back online, to refresh automatically.
+  final Stream<bool>? connectivityChanges;
+
   @override
   Widget build(BuildContext context) => BlocProvider(
-    create: (_) => HomeCubit(repository)..load(),
+    create: (_) =>
+        HomeCubit(repository, connectivityChanges: connectivityChanges)..load(),
     child: HomeView(
       registry: registry,
       onAction: (action, {sourceSectionId}) {

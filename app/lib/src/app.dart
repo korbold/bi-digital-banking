@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bi_digital_banking/src/di.dart';
+import 'package:bi_digital_banking/src/online_signal.dart';
 import 'package:bi_digital_banking/src/router.dart';
 import 'package:bi_digital_banking/src/theme_controller.dart';
 import 'package:core/core.dart';
@@ -81,7 +82,7 @@ class _SessionScopeState extends State<_SessionScope> {
           ? null
           : (AccountsCubit(
               sl(),
-              connectivityChanges: sl<ConnectivityMonitor>().onStatusChange,
+              connectivityChanges: sl<OnlineSignal>().changes,
             )..load());
     });
     unawaited(previous?.close());

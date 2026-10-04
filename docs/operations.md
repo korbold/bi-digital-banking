@@ -69,7 +69,7 @@ conecta a Firebase en `app/lib/src/observability/firebase_observability.dart`.
 2. En los logs de Vercel se filtra por `uid` y ventana de tiempo, y luego por `requestId` para ver la línea exacta (`status`, `latencyMs`, `error`, `stack`).
 3. Se clasifica: 4xx de negocio (no es incidente), 5xx propio, `upstream_unavailable` o timeout del cliente sin log en el servidor (red o cold start).
 
-Mejora pendiente: incluir el `X-Request-Id` que genera el cliente en los breadcrumbs de Crashlytics, para saltar del crash al log sin buscar por tiempo.
+Cada falla de red deja un breadcrumb en Crashlytics con el mismo `requestId` que el cliente envía en `X-Request-Id` y que el BFF escribe en su log: se salta del crash al log del servidor sin buscar por tiempo.
 
 ## Runbooks
 

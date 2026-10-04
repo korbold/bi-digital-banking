@@ -48,7 +48,7 @@ Requisito: sesión iniciada y el home cargado una vez, para que haya caché. El 
 4. **Sin conexión.** Activa **Sin conexión** (o pon el teléfono en modo avión).
    → Banners offline con los datos guardados. Al intentar transferir aparece el mensaje de que no se envió y se puede reintentar sin duplicar.
 5. **Recuperación.** Desactiva *Sin conexión* (o quita el modo avión).
-   → Los saldos se recargan solos al volver la conectividad (`AccountsCubit`); el home se actualiza con pull-to-refresh.
+   → Saldos y home se recargan solos al volver la conectividad (`OnlineSignal` en el app shell une connectivity_plus y el panel de chaos; `AccountsCubit` y `HomeCubit` refrescan al recibir `true`). Movimientos se refrescan con pull-to-refresh.
 6. **Reintento idempotente.** Pon *Tasa de fallas aleatorias* en **50 %** y haz una transferencia.
    → Los 503 inyectados se reintentan con la misma `Idempotency-Key`. Al final hay **un solo** débito y un solo push; puedes comprobarlo
    en el detalle de la cuenta. Ojo: el chaos falla *antes* de llegar al BFF. El caso en que el servidor sí procesó la

@@ -6,10 +6,17 @@ import 'package:feature_home/src/presentation/home_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  HomeCubit(this._repository) : super(const HomeLoading());
+  HomeCubit(this._repository, {Stream<bool>? connectivityChanges})
+    : super(const HomeLoading()) {
+    // Recovery: when connectivity returns, refresh without user action.
+    _connectivity = connectivityChanges
+        ?.where((online) => online)
+        .listen((_) => load());
+  }
 
   final HomeRepository _repository;
   StreamSubscription<Object?>? _subscription;
+  StreamSubscription<bool>? _connectivity;
 
   Future<void> load() async {
     final current = state;
@@ -63,6 +70,7 @@ class HomeCubit extends Cubit<HomeState> {
 
   @override
   Future<void> close() async {
+    await _connectivity?.cancel();
     await _subscription?.cancel();
     return super.close();
   }
