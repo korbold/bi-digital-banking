@@ -153,3 +153,45 @@ segmento/intereses/vigencia y ordenadas por prioridad.
   `getAuthToken` → `{ token }` (ID token de corta vida); `track {event, params}`; `close {result?}`;
   `notifyHost {title, body}` (toast nativo).
 - Orígenes permitidos: sólo el dominio del BFF. Cualquier otra navegación se bloquea.
+
+## Transferencias a terceros (v1.1)
+
+Cada cuenta tiene un **número completo de 10 dígitos** (`accountNumber`) visible sólo para su titular,
+que puede compartirlo para recibir transferencias. `number` sigue siendo la versión enmascarada (`****1234`).
+
+```json
+// Account (GET /api/accounts) — campo nuevo
+{ "id": "acc_x", "accountNumber": "2201234821", "number": "****4821", "...": "..." }
+```
+
+### GET /api/beneficiaries/lookup?accountNumber=2201234821
+
+Verificación previa (el cliente confirma a quién le envía). Nunca expone saldo ni nombre completo.
+
+```json
+// 200
+{ "accountNumber": "2201234821", "maskedNumber": "****4821", "holderName": "Danny B.",
+  "type": "savings", "isOwn": false, "accountId": null }
+// isOwn = true ⇒ accountId presente (es una cuenta propia; el cliente puede tratarla como transferencia propia)
+```
+Errores: 400 `invalid_request` (no son 10 dígitos) · 404 `beneficiary_not_found`.
+
+### POST /api/transfers — destino por número de cuenta
+
+El body acepta **exactamente uno** de `toAccountId` (cuenta propia) o `toAccountNumber` (cualquier cuenta).
+
+```json
+{ "fromAccountId": "acc_a", "toAccountNumber": "2201234821", "amount": 25.5, "description": "Almuerzo" }
+// 201
+{ "transferId": "trf_x", "kind": "third_party",
+  "from": { "id": "acc_a", "balance": 100.0 },
+  "to": { "accountNumber": "****4821", "holderName": "Danny B." },
+  "createdAt": "..." }
+```
+- `kind`: `own` | `third_party`. En `own`, `to` = `{ id, balance }` como antes; en `third_party` **no** se expone el saldo del destinatario.
+- Débito y crédito en una sola transacción Firestore aunque las cuentas sean de clientes distintos.
+- Push al emisor ("Transferencia realizada") y al receptor
+  (`{ title: "Recibiste una transferencia", body: "Danny B. te envió $25.50", data: { type: "transfer_received", route: "/accounts/{idDelReceptor}" } }`).
+- Errores nuevos: 404 `beneficiary_not_found`, 422 `same_account` si el número es la misma cuenta de origen.
+
+Índice: `accountIndex/{accountNumber}` → `{ uid, accountId }` (búsqueda O(1) sin índices compuestos).
