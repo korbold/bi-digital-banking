@@ -90,20 +90,18 @@ class _RegisterViewState extends State<RegisterView> {
               PasswordField(
                 controller: _password,
                 autofillHints: const [AutofillHints.newPassword],
+                textInputAction: TextInputAction.next,
                 validator: CredentialValidators.password,
               ),
               const SizedBox(height: BiSpacing.md),
-              TextFormField(
-                key: const Key('confirm_field'),
+              PasswordField(
                 controller: _confirm,
-                obscureText: true,
+                fieldKey: const Key('confirm_field'),
+                label: 'Confirmar contraseña',
+                autofillHints: const [AutofillHints.newPassword],
                 validator: (v) =>
                     v != _password.text ? 'Las contraseñas no coinciden' : null,
-                onFieldSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  labelText: 'Confirmar contraseña',
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
+                onSubmitted: (_) => _submit(),
               ),
               const SizedBox(height: BiSpacing.lg),
               SubmitButton(

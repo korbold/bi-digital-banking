@@ -76,7 +76,13 @@ class PasswordField extends StatefulWidget {
     this.validator,
     this.autofillHints = const [AutofillHints.password],
     this.onSubmitted,
+    this.fieldKey = const Key('password_field'),
+    this.textInputAction = TextInputAction.done,
   });
+
+  /// Key of the inner text field (tests and E2E target it).
+  final Key fieldKey;
+  final TextInputAction textInputAction;
 
   final TextEditingController controller;
   final String label;
@@ -93,12 +99,12 @@ class _PasswordFieldState extends State<PasswordField> {
 
   @override
   Widget build(BuildContext context) => TextFormField(
-    key: const Key('password_field'),
+    key: widget.fieldKey,
     controller: widget.controller,
     obscureText: _obscure,
     autofillHints: widget.autofillHints,
     validator: widget.validator,
-    textInputAction: TextInputAction.done,
+    textInputAction: widget.textInputAction,
     onFieldSubmitted: widget.onSubmitted,
     decoration: InputDecoration(
       labelText: widget.label,
