@@ -46,6 +46,14 @@ export class FxService {
     this.now = options.now ?? Date.now;
   }
 
+  /** Age of a still-fresh cached entry, or null when the next call goes upstream. */
+  freshCacheAgeMs(base: string): number | null {
+    const cached = this.cache.get(base.toUpperCase());
+    if (!cached) return null;
+    const age = this.now() - cached.storedAt;
+    return age < this.ttlMs ? age : null;
+  }
+
   async getRates(base: string, symbols?: string[]): Promise<FxRates> {
     const key = base.toUpperCase();
     if (!/^[A-Z]{3}$/.test(key)) throw new HttpError(400, 'invalid_request', 'Moneda base inválida');

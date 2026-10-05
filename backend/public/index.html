@@ -109,11 +109,13 @@
 
   <section aria-labelledby="arch-title">
     <h2 id="arch-title">Cómo encaja</h2>
-<pre class="flow">App Flutter ──HTTPS + ID token──▶ BFF (Vercel Function, TypeScript)
-   │  reintentos · circuit breaker · caché     ├─▶ Cloud Firestore   (clientes, cuentas, movimientos, experiencias)
-   │                                             ├─▶ Firebase Cloud Messaging  (push tras cada transferencia)
-   ├─▶ Firebase Auth / Remote Config             └─▶ open.er-api.com   (tipos de cambio)
-   └─▶ WebView ──puente JS──▶ micro-app de seguros (/miniapps/insurance/)</pre>
+<pre class="flow">App Flutter  (reintentos · circuit breaker · caché)
+  ├─▶ Firebase Auth / Remote Config
+  ├─▶ WebView ─puente JS─▶ micro-app de seguros
+  └─HTTPS + ID token─▶ BFF (Vercel Function, TypeScript)
+                         ├─▶ Cloud Firestore   clientes, cuentas, movimientos
+                         ├─▶ Firebase Cloud Messaging   push
+                         └─▶ open.er-api.com   tipos de cambio</pre>
   </section>
 
   <section aria-labelledby="api-title">
@@ -129,7 +131,8 @@
           <tr><td class="method">PATCH</td><td><code>/api/me/preferences</code></td><td>Intereses del cliente</td></tr>
           <tr><td class="method">GET</td><td><code>/api/accounts</code></td><td>Cuentas y saldos</td></tr>
           <tr><td class="method">GET</td><td><code>/api/accounts/{id}/movements</code></td><td>Movimientos paginados por cursor</td></tr>
-          <tr><td class="method">POST</td><td><code>/api/transfers</code></td><td>Transferencia atómica; exige <code>Idempotency-Key</code></td></tr>
+          <tr><td class="method">GET</td><td><code>/api/beneficiaries/lookup</code></td><td>Verifica un número de cuenta y devuelve el titular enmascarado</td></tr>
+          <tr><td class="method">POST</td><td><code>/api/transfers</code></td><td>Transferencia atómica entre cuentas propias o a terceros; exige <code>Idempotency-Key</code></td></tr>
           <tr><td class="method">GET</td><td><code>/api/home</code></td><td>Pantalla server-driven personalizada por segmento, uso y gasto</td></tr>
           <tr><td class="method">POST</td><td><code>/api/events</code></td><td>Señales de comportamiento para personalizar</td></tr>
           <tr><td class="method">POST</td><td><code>/api/devices</code></td><td>Registro de token FCM</td></tr>

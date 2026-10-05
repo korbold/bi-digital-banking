@@ -30,8 +30,13 @@ export const GET = route({ name: 'GET /api/status', auth: false }, async () => {
       await deps.repo.getCustomer('status-probe');
     }),
     probe('fx_provider', async () => {
+      // Within the 10 min TTL the BFF answers from memory without calling the
+      // provider: say so instead of showing an unexplained ~0 ms latency.
+      const age = deps.fx.freshCacheAgeMs('USD');
       const rates = await deps.fx.getRates('USD', ['EUR']);
-      return rates.stale ? 'serving cached rates' : undefined;
+      if (rates.stale) return 'proveedor caído · sirviendo tasas en caché';
+      if (age !== null) return `desde caché del BFF (hace ${Math.max(1, Math.round(age / 60_000))} min)`;
+      return 'consulta directa al proveedor';
     }),
   ]);
   const overall = checks.every((c) => c.status === 'up')
