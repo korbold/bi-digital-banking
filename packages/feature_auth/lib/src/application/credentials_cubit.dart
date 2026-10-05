@@ -89,18 +89,12 @@ class RegisterCubit extends Cubit<CredentialsState> {
   final AuthRepository _auth;
   final AnalyticsTracker _analytics;
 
-  Future<void> submit({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
+  /// Only credentials here: the legal name is captured once, in onboarding,
+  /// next to the cédula (KYC), instead of asking for it twice.
+  Future<void> submit({required String email, required String password}) async {
     if (state.isSubmitting) return;
     emit(const CredentialsState(status: FormStatus.submitting));
-    final result = await _auth.register(
-      email: email,
-      password: password,
-      displayName: name.trim(),
-    );
+    final result = await _auth.register(email: email, password: password);
     switch (result) {
       case Success():
         _analytics.track('sign_up').ignore();

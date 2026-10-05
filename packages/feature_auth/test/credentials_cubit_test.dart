@@ -63,8 +63,7 @@ void main() {
         ),
       ).thenAnswer((_) async => const Result.failure(OfflineFailure())),
       build: () => RegisterCubit(auth),
-      act: (cubit) =>
-          cubit.submit(name: 'Ana', email: 'ana@test.com', password: 'secret1'),
+      act: (cubit) => cubit.submit(email: 'ana@test.com', password: 'secret1'),
       expect: () => [
         const CredentialsState(status: FormStatus.submitting),
         const CredentialsState(

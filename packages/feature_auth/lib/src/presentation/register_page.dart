@@ -36,14 +36,13 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
 
   @override
   void dispose() {
-    for (final c in [_name, _email, _password, _confirm]) {
+    for (final c in [_email, _password, _confirm]) {
       c.dispose();
     }
     super.dispose();
@@ -53,7 +52,6 @@ class _RegisterViewState extends State<RegisterView> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
     context.read<RegisterCubit>().submit(
-      name: _name.text,
       email: _email.text,
       password: _password.text,
     );
@@ -76,19 +74,6 @@ class _RegisterViewState extends State<RegisterView> {
               FormErrorText(
                 state.status == FormStatus.failure ? state.errorMessage : null,
               ),
-              TextFormField(
-                key: const Key('name_field'),
-                controller: _name,
-                textCapitalization: TextCapitalization.words,
-                autofillHints: const [AutofillHints.name],
-                textInputAction: TextInputAction.next,
-                validator: CredentialValidators.name,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre completo',
-                  prefixIcon: Icon(Icons.person_outline),
-                ),
-              ),
-              const SizedBox(height: BiSpacing.md),
               TextFormField(
                 key: const Key('email_field'),
                 controller: _email,

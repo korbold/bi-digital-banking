@@ -60,7 +60,6 @@ void main() {
     // 1. Register
     await tester.tapAndPump(find.text('¿Eres nuevo? Abre tu cuenta'));
     await tester.pumpUntilFound(find.byKey(const Key('register_button')));
-    await tester.enter(const Key('name_field'), 'Cliente E2E');
     await tester.enter(const Key('email_field'), email);
     // Both password inputs reuse PasswordField; the first one is the password.
     await tester.enterText(
