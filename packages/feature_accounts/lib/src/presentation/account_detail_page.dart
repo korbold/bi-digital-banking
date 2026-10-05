@@ -51,6 +51,9 @@ class _AccountDetailViewState extends State<AccountDetailView> {
   @override
   void initState() {
     super.initState();
+    // Movements are fetched fresh on open; refresh the balance too so the
+    // header never contradicts the list (e.g. after receiving money).
+    unawaited(context.read<AccountsCubit>().refresh());
     _scroll.addListener(() {
       if (_scroll.position.extentAfter < 400) {
         unawaited(context.read<MovementsCubit>().loadMore());

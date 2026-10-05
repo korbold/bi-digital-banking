@@ -27,6 +27,12 @@ class PushService {
   // the launch notification) before the router starts listening.
   final StreamController<String> _deepLinks = StreamController<String>();
   final List<StreamSubscription<Object?>> _subscriptions = [];
+  final StreamController<PushMessage> _received =
+      StreamController<PushMessage>.broadcast();
+
+  /// Notifications received while the app is open, so the app can refresh
+  /// data they refer to (e.g. balances after a transfer).
+  Stream<PushMessage> get received => _received.stream;
   bool _initialized = false;
   bool _signedIn = false;
 
@@ -51,9 +57,10 @@ class PushService {
           }),
         )
         ..add(
-          _messaging.onForegroundMessage.listen(
-            (m) => unawaited(_local.show(m)),
-          ),
+          _messaging.onForegroundMessage.listen((m) {
+            unawaited(_local.show(m));
+            if (!_received.isClosed) _received.add(m);
+          }),
         )
         ..add(_messaging.onMessageOpenedApp.listen((m) => _emitRoute(m.route)));
 
@@ -98,6 +105,7 @@ class PushService {
       await s.cancel();
     }
     await _deepLinks.close();
+    await _received.close();
   }
 }
 

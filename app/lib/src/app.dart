@@ -67,10 +67,20 @@ class _SessionScope extends StatefulWidget {
   State<_SessionScope> createState() => _SessionScopeState();
 }
 
-class _SessionScopeState extends State<_SessionScope> {
+class _SessionScopeState extends State<_SessionScope>
+    with WidgetsBindingObserver {
   AccountsCubit? _accounts;
   String? _uid;
   StreamSubscription<String>? _deepLinks;
+  StreamSubscription<PushMessage>? _pushes;
+
+  /// Balances can change server-side without any action in this app (money
+  /// received from another customer): refresh when the app comes back to the
+  /// foreground, e.g. after tapping the notification.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_accounts?.refresh());
+  }
 
   void _onSession(SessionState state) {
     final uid = state is SessionAuthenticated ? state.user.uid : null;
@@ -107,17 +117,24 @@ class _SessionScopeState extends State<_SessionScope> {
     await push.start();
     // Single subscription for the app lifetime: routes from notification taps.
     _deepLinks ??= push.deepLinks.listen((route) => widget.router.push(route));
+    // A transfer notification while the app is open means balances moved.
+    _pushes ??= push.received
+        .where((m) => '${m.data['type']}'.startsWith('transfer'))
+        .listen((_) => unawaited(_accounts?.refresh()));
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _onSession(context.read<SessionCubit>().state);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_deepLinks?.cancel());
+    unawaited(_pushes?.cancel());
     unawaited(_accounts?.close());
     super.dispose();
   }

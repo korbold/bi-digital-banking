@@ -168,4 +168,22 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(registered, isNot(contains('fcm-token-late')));
   });
+
+  test(
+    'foreground notifications are re-emitted so the app can refresh data',
+    () async {
+      await service.start();
+      final received = <PushMessage>[];
+      final sub = service.received.listen(received.add);
+      messaging.foreground.add(
+        const PushMessage(
+          title: 'Recibiste una transferencia',
+          data: {'type': 'transfer_received', 'route': '/accounts/a'},
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(received.single.data['type'], 'transfer_received');
+      await sub.cancel();
+    },
+  );
 }
