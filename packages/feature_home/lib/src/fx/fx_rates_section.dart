@@ -1,6 +1,9 @@
 import 'package:design_system/design_system.dart';
 import 'package:feature_home/src/fx/fx_cubit.dart';
 import 'package:feature_home/src/fx/fx_repository.dart';
+import 'package:feature_home/src/presentation/home_cubit.dart';
+import 'package:feature_home/src/presentation/home_page.dart' show formatTime;
+import 'package:feature_home/src/presentation/home_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sdui/sdui.dart';
@@ -23,7 +26,31 @@ class FxRatesSection extends StatelessWidget {
     final symbols = section.list('symbols').whereType<String>().toList();
     return BlocProvider(
       create: (_) => FxCubit(repository, base: base, symbols: symbols)..load(),
-      child: const _FxCard(),
+      child: const _HomeRefreshListener(child: _FxCard()),
+    );
+  }
+}
+
+/// Re-fetches rates whenever the surrounding home refreshes (pull-to-refresh
+/// or automatic recovery), so an fx outage or recovery shows up right away.
+/// Outside a home (e.g. in isolation tests) it is a no-op.
+class _HomeRefreshListener extends StatelessWidget {
+  const _HomeRefreshListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final home = context.read<HomeCubit?>();
+    if (home == null) return child;
+    return BlocListener<HomeCubit, HomeState>(
+      bloc: home,
+      listenWhen: (previous, current) =>
+          current is HomeLoaded &&
+          current.isRefreshing &&
+          !(previous is HomeLoaded && previous.isRefreshing),
+      listener: (context, _) => context.read<FxCubit>().load(silent: true),
+      child: child,
     );
   }
 }
@@ -56,9 +83,21 @@ class _FxCard extends StatelessWidget {
               ),
             ],
           ),
-          FxLoaded(:final rates, :final isStale) => Column(
+          FxLoaded(:final rates, :final isStale, :final fetchedAt) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isStale)
+                Padding(
+                  key: const ValueKey('fx-stale'),
+                  padding: const EdgeInsets.only(bottom: BiSpacing.sm),
+                  child: StatusBanner(
+                    message:
+                        'Tasas guardadas de ${formatTime(fetchedAt)} · servicio no disponible',
+                    tone: BannerTone.warning,
+                    action: 'Reintentar',
+                    onAction: () => context.read<FxCubit>().load(),
+                  ),
+                ),
               SectionHeader(
                 'Tipos de cambio (1 ${rates.base})',
                 trailing: isStale

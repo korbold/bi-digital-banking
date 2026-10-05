@@ -62,4 +62,31 @@ void main() {
     expect(find.text('0.9123'), findsOneWidget);
     expect(find.text('4100'), findsOneWidget);
   });
+
+  testWidgets('cached rates during an fx outage show a visible stale banner', (
+    tester,
+  ) async {
+    when(
+      () => repository.fetch(base: 'USD', symbols: ['EUR', 'COP']),
+    ).thenAnswer(
+      (_) async => Result.success(
+        Fetched(
+          const FxRates(
+            base: 'USD',
+            rates: {'EUR': 0.9123, 'COP': 4100},
+            provider: 'open.er-api.com',
+          ),
+          source: DataSource.cache,
+          fetchedAt: DateTime(2026, 10, 5, 9, 31),
+        ),
+      ),
+    );
+
+    await pump(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('fx-stale')), findsOneWidget);
+    expect(find.textContaining('Tasas guardadas de 09:31'), findsOneWidget);
+    expect(find.text('EUR'), findsOneWidget);
+  });
 }
