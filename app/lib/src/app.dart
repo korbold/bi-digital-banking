@@ -96,6 +96,7 @@ class _SessionScopeState extends State<_SessionScope> {
       );
       unawaited(_startPush());
     } else if (state is SessionUnauthenticated) {
+      unawaited(sl<PushService>().stop());
       unawaited(sl<ApiClient>().clearCache());
       unawaited(sl<AnalyticsTracker>().setUserId(null));
     }

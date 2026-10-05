@@ -5,6 +5,9 @@ abstract interface class MessagingGateway {
   /// Asks the OS for notification permission (Android 13+ / iOS).
   Future<bool> requestPermission();
   Future<String?> getToken();
+
+  /// Invalidates the current token; the next [getToken] returns a new one.
+  Future<void> deleteToken();
   Stream<String> get onTokenRefresh;
 
   /// Messages received while the app is in the foreground.

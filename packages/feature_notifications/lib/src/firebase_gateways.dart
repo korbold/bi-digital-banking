@@ -29,6 +29,9 @@ class FirebaseMessagingGateway implements MessagingGateway {
   Future<String?> getToken() => _fcm.getToken();
 
   @override
+  Future<void> deleteToken() => _fcm.deleteToken();
+
+  @override
   Stream<String> get onTokenRefresh => _fcm.onTokenRefresh;
 
   @override

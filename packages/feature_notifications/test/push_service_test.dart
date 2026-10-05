@@ -15,8 +15,16 @@ class _FakeMessaging implements MessagingGateway {
   @override
   Future<bool> requestPermission() async => granted;
 
+  int deletions = 0;
+
   @override
   Future<String?> getToken() async => token;
+
+  @override
+  Future<void> deleteToken() async {
+    deletions++;
+    token = 'fcm-token-${deletions + 1}';
+  }
 
   @override
   Stream<String> get onTokenRefresh => refresh.stream;
@@ -137,5 +145,27 @@ void main() {
     messaging.initial = const PushMessage(data: {'route': '/accounts/late'});
     await service.start();
     expect(await service.deepLinks.first, '/accounts/late');
+  });
+
+  test(
+    'a new session on the same device registers a fresh token; sign-out deletes it',
+    () async {
+      await service.start();
+      expect(registered, ['fcm-token-1']);
+
+      await service.stop();
+      expect(messaging.deletions, 1);
+
+      await service.start(); // another customer signs in on this device
+      expect(registered, ['fcm-token-1', 'fcm-token-2']);
+    },
+  );
+
+  test('token refreshes after sign-out are not registered', () async {
+    await service.start();
+    await service.stop();
+    messaging.refresh.add('fcm-token-late');
+    await Future<void>.delayed(Duration.zero);
+    expect(registered, isNot(contains('fcm-token-late')));
   });
 }

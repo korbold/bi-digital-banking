@@ -27,33 +27,56 @@ class PushService {
   // the launch notification) before the router starts listening.
   final StreamController<String> _deepLinks = StreamController<String>();
   final List<StreamSubscription<Object?>> _subscriptions = [];
-  bool _started = false;
+  bool _initialized = false;
+  bool _signedIn = false;
 
   /// In-app routes to open, from tapped notifications.
   Stream<String> get deepLinks => _deepLinks.stream;
 
-  /// Call after the user is authenticated (the token is tied to the user).
+  /// Call on every sign-in. The FCM token belongs to the device, but the
+  /// backend stores it under the customer, so each new session registers it
+  /// again for the customer now signed in.
   Future<void> start() async {
-    if (_started) return;
-    _started = true;
+    _signedIn = true;
+    if (!_initialized) {
+      _initialized = true;
+      await _local.initialize(onTap: _emitRoute);
+      final granted = await _messaging.requestPermission();
+      if (!granted) _logger.warning('Push permission denied');
 
-    await _local.initialize(onTap: _emitRoute);
+      _subscriptions
+        ..add(
+          _messaging.onTokenRefresh.listen((t) {
+            if (_signedIn) unawaited(_register(t));
+          }),
+        )
+        ..add(
+          _messaging.onForegroundMessage.listen(
+            (m) => unawaited(_local.show(m)),
+          ),
+        )
+        ..add(_messaging.onMessageOpenedApp.listen((m) => _emitRoute(m.route)));
 
-    final granted = await _messaging.requestPermission();
-    if (!granted) _logger.warning('Push permission denied');
+      final initial = await _messaging.getInitialMessage();
+      _emitRoute(initial?.route ?? await _local.launchPayload());
+    }
 
     final token = await _messaging.getToken();
     if (token != null) await _register(token);
+  }
 
-    _subscriptions
-      ..add(_messaging.onTokenRefresh.listen(_register))
-      ..add(
-        _messaging.onForegroundMessage.listen((m) => unawaited(_local.show(m))),
-      )
-      ..add(_messaging.onMessageOpenedApp.listen((m) => _emitRoute(m.route)));
-
-    final initial = await _messaging.getInitialMessage();
-    _emitRoute(initial?.route ?? await _local.launchPayload());
+  /// Call on sign-out. Deleting the token stops this device from receiving
+  /// the previous customer's notifications: the backend still holds the old
+  /// token, but FCM rejects it as unregistered and the notifier prunes it on
+  /// the next send.
+  Future<void> stop() async {
+    if (!_signedIn) return;
+    _signedIn = false;
+    try {
+      await _messaging.deleteToken();
+    } on Object catch (e, st) {
+      _logger.error('Push token deletion failed', error: e, stackTrace: st);
+    }
   }
 
   Future<void> _register(String token) async {
