@@ -52,6 +52,27 @@ const extra: Experience[] = [
       },
     },
   },
+  {
+    // Seeded inactive on purpose: the live demo flips `active` to true in the
+    // Firestore console and the banner appears only for customers interested
+    // in health, without a new app release.
+    id: 'exp_health_life',
+    active: false,
+    priority: 85,
+    segments: [],
+    interests: ['health'],
+    section: {
+      id: 'exp_health_life',
+      type: 'promo_banner',
+      minAppVersion: 1,
+      props: {
+        title: 'Cuida lo que más importa',
+        body: 'Seguro de vida con cobertura de salud desde $3 al mes.',
+        background: '#0B8043',
+        cta: { label: 'Cotizar', action: { type: 'open_miniapp', miniappId: 'insurance', params: { product: 'life' } } },
+      },
+    },
+  },
 ];
 
 async function main() {
