@@ -4,7 +4,8 @@ App Flutter de banca digital **sin atención física**. Tiene onboarding, cuenta
 
 | Recurso | URL |
 |---|---|
-| BFF (producción) | https://bi-digital-banking.vercel.app |
+| 🎬 Video de demostración | [Google Drive](https://drive.google.com/file/d/1bjwkmAwQ2raJ9nT3NgtUM7Q2GiB-J6rr/view?usp=sharing) |
+| BFF (producción) + página de estado | https://bi-digital-banking.vercel.app |
 | Health check | https://bi-digital-banking.vercel.app/api/health |
 | Micro-app de seguros | https://bi-digital-banking.vercel.app/miniapps/insurance/ |
 | CI | [GitHub Actions](../../actions) |
@@ -14,7 +15,7 @@ App Flutter de banca digital **sin atención física**. Tiene onboarding, cuenta
 | Requisito | Implementación |
 |---|---|
 | Onboarding y autenticación | `packages/feature_auth`: Firebase Auth email/contraseña, `SessionCubit`, onboarding en 2 pasos con validación de cédula (módulo 10). Alta en el BFF: `POST /api/onboarding` |
-| Cuentas, saldos y movimientos | `packages/feature_accounts`: resumen, detalle con paginación por cursor y transferencias idempotentes. BFF: `/api/accounts`, `/api/accounts/{id}/movements`, `/api/transfers` (transacción Firestore) |
+| Cuentas, saldos y movimientos | `packages/feature_accounts`: resumen, detalle con paginación por cursor y transferencias idempotentes entre cuentas propias y a terceros por número de cuenta (con verificación del titular). BFF: `/api/accounts`, `/api/accounts/{id}/movements`, `/api/transfers` (transacción Firestore) |
 | Personalización dinámica | `packages/sdui` + `packages/feature_home`. El BFF compone el home (`GET /api/home`) según segmento, intereses, hora local, uso real y gasto del mes, más campañas en la colección `experiences`. Remote Config agrega kill switches |
 | Servicio / micro-app externo | Tipos de cambio reales (`/api/fx` → open.er-api.com) y micro-app web de seguros en WebView con puente JS restringido (`packages/feature_miniapps`) |
 | Notificaciones push | `packages/feature_notifications` (FCM + notificaciones locales + deep links). El BFF envía push tras cada transferencia y en `POST /api/notifications/test` |
