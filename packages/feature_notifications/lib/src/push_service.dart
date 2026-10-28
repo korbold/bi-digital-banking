@@ -4,6 +4,7 @@ import 'package:core/core.dart';
 import 'package:core_network/core_network.dart';
 import 'package:feature_notifications/src/gateways.dart';
 import 'package:feature_notifications/src/push_message.dart';
+import 'package:flutter/foundation.dart';
 
 /// Orchestrates push: permission, token registration (and refresh),
 /// foreground display and deep links from tapped notifications.
@@ -58,7 +59,11 @@ class PushService {
         )
         ..add(
           _messaging.onForegroundMessage.listen((m) {
-            unawaited(_local.show(m));
+            // iOS already shows the push as a banner (AppDelegate.willPresent);
+            // Android does not, so it needs a local notification.
+            if (defaultTargetPlatform != TargetPlatform.iOS) {
+              unawaited(_local.show(m));
+            }
             if (!_received.isClosed) _received.add(m);
           }),
         )

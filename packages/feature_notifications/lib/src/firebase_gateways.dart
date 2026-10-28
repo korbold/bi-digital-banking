@@ -25,8 +25,19 @@ class FirebaseMessagingGateway implements MessagingGateway {
         settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
+  /// On iOS the FCM token can only be issued once APNs has handed the device
+  /// its own token, which arrives asynchronously after the permission prompt.
+  /// Asking earlier throws `apns-token-not-set`, so wait for it first.
   @override
-  Future<String?> getToken() => _fcm.getToken();
+  Future<String?> getToken() async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      for (var i = 0; i < 20; i++) {
+        if (await _fcm.getAPNSToken() != null) break;
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+    }
+    return _fcm.getToken();
+  }
 
   @override
   Future<void> deleteToken() => _fcm.deleteToken();
