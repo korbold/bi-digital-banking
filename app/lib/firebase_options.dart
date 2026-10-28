@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -58,5 +55,14 @@ class DefaultFirebaseOptions {
     messagingSenderId: '224647001108',
     projectId: 'bi-digital-banking-d0081',
     storageBucket: 'bi-digital-banking-d0081.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCl3D7lNEED8IjVAxGMyTk_RnALbZSBuUk',
+    appId: '1:224647001108:ios:cb27a943a692bd75ece301',
+    messagingSenderId: '224647001108',
+    projectId: 'bi-digital-banking-d0081',
+    storageBucket: 'bi-digital-banking-d0081.firebasestorage.app',
+    iosBundleId: 'ec.korbold.bidigital',
   );
 }
